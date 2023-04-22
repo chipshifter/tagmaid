@@ -16,6 +16,10 @@ One negative aspect of this solution is that you need to add most tags yourself 
 
 ### !! This software is in very early stage and not suitable for a stable public release !!
 
+## 0.2 - The search update
+
+(TEST)
+
 ## Features
 
 TagMaid is written completely in Rust. The main dependencies are `egui` for the GUI and `rusqlite` for the SQLite database.
