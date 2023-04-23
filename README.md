@@ -26,6 +26,8 @@ There are very few features as of yet, since the software is still in the "proof
 Building should be as simple as running `cargo build --release`. You can also simply run `cargo run` to test
 the software.
 
+**You may also need to install the `pkg-config` and `libgtk-3-dev` system packages to build some dependencies the first time.**
+
 ## Debugging
 
 Here are cargo features used for debugging and development purposes:
