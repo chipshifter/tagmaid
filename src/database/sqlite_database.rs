@@ -72,8 +72,13 @@ impl SqliteDatabase {
             &path.display()
         );
 
+        
+        Ok(SqliteDatabase { db: Self::open_db_connection(&path)? })
+    }
+
+    pub fn open_db_connection(sqlite_file_path: &PathBuf) -> Result<Connection> {
         let db =
-            Connection::open(&path).context("Couldn't open a connection to SQLite database")?;
+        Connection::open(sqlite_file_path).context("Couldn't open a connection to SQLite database")?;
 
         debug!("SqliteDatabase - initialise_default() - Creating _files table if not exists");
 
@@ -90,8 +95,82 @@ impl SqliteDatabase {
         )
         .context("Couldn't create '_files' table for database")?;
 
-        Ok(SqliteDatabase { db: db })
+        /// Creates the `_tags` table.
+        /// `tag_name`: The tag name
+        /// `upload_count`: The amount of files with the `tag_name` tag
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS _tags (
+                id              INTEGER PRIMARY KEY,
+                tag_name        TEXT NOT NULL UNIQUE,
+                upload_count    INTEGER NOT NULL
+            )",
+            (),
+        )
+        .context("Couldn't create '_tags' table for database")?;
+
+        Ok(db)
     }
+
+    /// Adds a tag in the `_tags` table. Used to retain some information about the tags
+    /// themselves (for now, only the amount of files)
+    /// If a tag is already present, nothing will change (and it will return Ok())
+    pub fn add_tag(&self, tag: &str) -> Result<()> {
+        let db: &Connection = &self.db;
+        
+        db.execute(
+            "INSERT INTO _tags (tag_name, upload_count) VALUES (?1, ?2) ON CONFLICT DO NOTHING",
+            (tag, 0),
+        ).context("Couldn't add tag {tag} in _tags table")?;
+
+        Ok(())
+    }
+
+    /// Removes a given `tag` from `_tags` table
+    pub fn remove_tag(&self, tag: &str) -> Result<()> {
+        let db: &Connection = &self.db;
+        
+        db.execute(
+            "DELETE FROM _tags WHERE tag_name IS :tag",
+            &[(":tag", tag)],
+        ).context("Couldn't remove tag {tag} in _tags table")?;
+
+        Ok(())
+    }
+
+    /// Retrieves the stored `upload_count` in `_tags` table. Note that it *could be* desynced
+    /// with the actual amount of files that have `tag`. `upload_tag_count()` helps against this
+    /// issue.
+    pub fn get_tag_count(&self, tag: &str) -> Result<i64> {
+        let db: &Connection = &self.db;
+
+        return Ok(db.query_row("SELECT upload_count FROM _tags WHERE tag_name IS :tag",
+        &[(":tag", tag)],
+        |row| row.get(0),)?);
+    }
+
+    /// Sets `upload_count` attribute to `tag_count` on a given `tag` in the `_tags` table.
+    /// This shouldn't be used manually, because it could desynchronise the count with the
+    /// rest of the database. You probably want to use `increase_tag_count_by_one()`.
+    pub fn set_tag_count(&self, tag: &str, tag_count: i64) -> Result<()> {
+        let db: &Connection = &self.db;
+
+        db.execute(
+            "UPDATE _tags SET upload_count = ?1 WHERE tag_name IS ?2",
+            rusqlite::params![tag_count, tag],
+        ).context("Couldn't update tag count for tag {tag} in database")?;
+
+        Ok(())
+    }
+
+    /// Increases `upload_count` by one on a given `tag` in the `_tags` table. Used
+    /// when uploading a new file.
+    pub fn increase_tag_count_by_one(&self, tag: &str) -> Result<()> {
+        let mut tag_count: i64 = self.get_tag_count(tag)?;
+        tag_count += 1;
+        self.set_tag_count(tag, tag_count)?;
+        Ok(())
+    }
+
 
     /// Adds an entry of the specified TagFile in the `_files` table of the database.
     /// It does not handle the tables for tags: update_tags_to_file() does.
@@ -301,5 +380,85 @@ impl SqliteDatabase {
         )?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::distributions::{Alphanumeric, DistString};
+    use std::fs::File;
+
+    fn get_random_db_connection() -> SqliteDatabase {
+        let mut tmp_db_dir = tempfile::tempdir().unwrap().into_path();
+        let random_db_name = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+        tmp_db_dir.push(random_db_name);
+        let _ = File::create(&tmp_db_dir).unwrap();
+        let tmp_db = SqliteDatabase::open_db_connection(&tmp_db_dir).unwrap();
+        return SqliteDatabase { db: tmp_db };
+    }
+    
+    #[test]
+    fn should_tag_entry_get_added() {
+        let db = get_random_db_connection();
+        // Err() because the tag isn't there yet
+        assert!(db.get_tag_count("test").is_err());
+
+        // Ok() because the 'set' updates if it finds anything. If it doesn't
+        // it just moves on without errors
+        assert!(db.set_tag_count("test", 0).is_ok());
+
+        // Err() because it relies on get_tag_count()
+        assert!(db.increase_tag_count_by_one("test").is_err());
+
+        // We finally add the tag
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+    }
+
+    #[test]
+    fn should_tag_entry_get_removed() {
+        let db = get_random_db_connection();
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+
+        assert!(db.remove_tag("test").is_ok());
+        assert!(db.get_tag_count("test").is_err());
+    }
+
+    #[test]
+    fn should_tag_count_increase() {
+        let db = get_random_db_connection();
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+
+        assert!(db.increase_tag_count_by_one("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(1));
+    }
+
+    #[test]
+    fn should_tag_count_get_set() {
+        let db = get_random_db_connection();
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+
+        assert!(db.set_tag_count("test", 69).is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(69));
+    }
+
+    #[test]
+    fn should_tag_entry_not_overwrite() {
+        let db = get_random_db_connection();
+
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+        
+        assert!(db.set_tag_count("test", 69).is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(69));
+
+        // Even though we re-add a tag that was already added, the count should
+        // not reset to 0
+        assert!(db.add_tag("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(69));
     }
 }
