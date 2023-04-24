@@ -154,9 +154,36 @@ impl TagMaidDatabase {
         let sql_db = &fs_db.sqlite_database;
         return sql_db.get_tag_count(tag).ok();
     }
+
+    #[cfg(test)]
+    fn create_random_tagmaiddatabase() -> TagMaidDatabase {
+        return TagMaidDatabase {
+            filesystem_db: Arc::new(Mutex::new(TagDatabase::create_random_tagdatabase())),
+            cache: Arc::new(TagMaidCache::init()),
+        };
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_tagfile_upload_and_retrieve() {
+        let tf = TagFile::create_random_tagfile();
+        let tf_hash = tf.file_hash.clone();
+
+        let db = TagMaidDatabase::create_random_tagmaiddatabase();
+        // Nothing was uploaded yet so it shouldn't find any TagFile
+        assert!(db.get_tagfile_from_hash(&tf_hash).is_err());
+
+        // We upload `tf`
+        assert!(db.update_tagfile(&tf).is_ok());
+
+        // We check if it found the right TagFile
+        assert_eq!(db.get_tagfile_from_hash(&tf_hash).ok(), Some(tf));
+    }
+
+    
+    fn
 }
