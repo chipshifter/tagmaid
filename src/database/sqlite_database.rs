@@ -486,6 +486,8 @@ mod tests {
 
     #[test]
     fn should_tag_count_sync() {
+        use rand::Rng;
+
         let db = get_random_db_connection();
 
         assert!(db.add_tag("test").is_ok());
@@ -498,15 +500,20 @@ mod tests {
         assert!(db.sync_tag_count("test").is_ok());
         assert_eq!(db.get_tag_count("test").ok(), Some(0));
 
-        // We add a random file with tag test
-        let mut tmp_tagfile = crate::TagDatabase::create_random_tagfile();
-        let _ = tmp_tagfile.add_tag("test");
-        assert!(db.add_file(&tmp_tagfile).is_ok());
-        assert!(db.update_tags_to_file(&tmp_tagfile).is_ok());
-
-        // Now there is 1 file with tag 'test' so syncing it back will give 1
+        // Add `n` random files
+        let n_files: i64 = rand::thread_rng().gen_range(2..20);
+        for _i in 0..n_files {
+            // We add a random file with tag test
+            let mut tmp_tagfile = crate::TagDatabase::create_random_tagfile();
+            let _ = tmp_tagfile.add_tag("test");
+            assert!(db.add_file(&tmp_tagfile).is_ok());
+            assert!(db.update_tags_to_file(&tmp_tagfile).is_ok());
+        }
+        
+        // Now there is 1 file with tag 'test' so syncing it back will `n` 
+        // (for the `n` files we added)
         assert!(db.sync_tag_count("test").is_ok());
-        assert_eq!(db.get_tag_count("test").ok(), Some(1));
+        assert_eq!(db.get_tag_count("test").ok(), Some(n_files));
     }
 
 
