@@ -8,10 +8,11 @@ use log::*;
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::fs::{self, File, ReadDir};
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
-use std::io::Write;
+#[cfg(test)]
 use rand::distributions::{Alphanumeric, DistString};
 
 pub struct TagDatabase {
@@ -190,56 +191,7 @@ impl TagDatabase {
     }
 
     #[cfg(test)]
-    pub fn create_random_tagfile() -> TagFile {
-        // random 16-char string
-        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-
-        let tmp_dir = tempfile::tempdir().unwrap();
-        // into_path is necessary for tempdir to persist in the file system
-        let tmp_file_path = tmp_dir.into_path().as_path().join(random_string);
-
-        let mut temp_file = File::create(&tmp_file_path).unwrap();
-        let random_string_2 = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-        let _ = &temp_file.write_all(random_string_2.as_bytes()).unwrap();
-
-        let tagfile = TagFile::initialise_from_path(&tmp_file_path).unwrap();
-        return tagfile;
-    }
-
-    // pub fn cleanup(&self) -> Result<()> {
-    //     // Stage 1: Mark for cleanup
-    //     let file_hashes = &self.get_all_file_hashes()?;
-    //     let mut hashes_to_clean_up = HashSet::new();
-    //     for hash in file_hashes {
-    //         let tags = &self.get_tags_from_hash(&hash)?;
-    //         if tags.is_empty() {
-    //             // There are no tags on the file, mark hash for cleanup
-    //             info!(
-    //                 "TagDatabase - cleanup() - Marking file with hash {:?} to deletion",
-    //                 &hash
-    //             );
-    //             hashes_to_clean_up.insert(hash);
-    //         }
-    //     }
-
-    //     // Stage 2: Cleanup
-    //     for hash_to_clean in hashes_to_clean_up {
-    //         let file_to_clean: &TagFile = &self.get_tagfile_from_hash(hash_to_clean)?;
-    //         info!(
-    //             "TagDatabase - cleanup() - Removing useless file {}",
-    //             &file_to_clean.display()
-    //         );
-    //         let _ = &self.remove_file(file_to_clean)?;
-    //     }
-
-    //     Ok(())
-    // }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    fn create_random_tagdatabase() -> TagDatabase {
+    pub fn create_random_tagdatabase() -> TagDatabase {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_path = tmp_dir.into_path();
 
@@ -249,24 +201,17 @@ mod tests {
         let db: TagDatabase = TagDatabase::initialise(random_string, Some(tmp_path)).unwrap();
         return db;
     }
+}
 
-    fn create_random_tagfile_in_tagdatabase() -> TagFile {
-        let tmp_dir = tempfile::tempdir().unwrap();
-        let tmp_path = tmp_dir.into_path();
-
-        // random 16-char string
-        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-
-        let db: TagDatabase = TagDatabase::initialise(random_string, Some(tmp_path)).unwrap();
-        let tagfile = TagDatabase::create_random_tagfile();
-        let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
-        return uploaded_tagfile;
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::distributions::{Alphanumeric, DistString};
 
     #[test]
     fn should_tagfile_upload_in_fs() {
-        let tagfile = create_random_tagfile_in_tagdatabase();
-        let db = create_random_tagdatabase();
+        let tagfile = TagFile::create_random_tagfile_in_tagdatabase();
+        let db = TagDatabase::create_random_tagdatabase();
 
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         assert_eq!(tagfile.file_hash, uploaded_tagfile.file_hash);
@@ -276,8 +221,8 @@ mod tests {
 
     #[test]
     fn should_tagfile_remove_in_fs() {
-        let tagfile = TagDatabase::create_random_tagfile();
-        let db = create_random_tagdatabase();
+        let tagfile = TagFile::create_random_tagfile();
+        let db = TagDatabase::create_random_tagdatabase();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         let tagfile_path = uploaded_tagfile.get_path();
 
@@ -310,9 +255,6 @@ mod tests {
         assert_eq!(&db.path, &db_path);
         assert_eq!(&db.name, &random_string);
 
-        // only 2 files: sqlite.db and "files" folder
-        assert_eq!(db.contents.count(), 2);
-
         fs::remove_dir_all(&db_path).unwrap();
 
         // switch to a different path
@@ -326,7 +268,7 @@ mod tests {
 
     #[test]
     fn should_delete_database() {
-        let db = create_random_tagdatabase();
+        let db = TagDatabase::create_random_tagdatabase();
         // database is created. Path tag-maid/<random-name> exists
         let db_path = &db.path.clone();
         assert!(Path::new(&db_path).exists());
@@ -336,96 +278,46 @@ mod tests {
         assert!(!Path::new(&db_path).exists());
     }
 
-    // #[test]
-    // fn should_tags_in_database_update() {
-    //     let db = create_random_tagdatabase();
-    //     let mut file = create_random_tagfile();
+    #[test]
+    fn should_db_structure_be_correct() {
+        let db = TagDatabase::create_random_tagdatabase();
 
-    //     let mut file_tags = HashSet::new();
+        // The database when initialised creates the following things in the parent folder:
+        //  - sqlite.db for the SQLite database
+        //  - A "files" folder that contains all the uploaded files
 
-    //     file_tags.insert("cool".to_string());
-    //     file_tags.insert("amazing".to_string());
-    //     file_tags.insert("epic_fail".to_string());
+        // db.contents is a ReadDir reading from the database path.
+        // We turn that into a vector of PathBufs to compare with what is expected
+        let path_iter: Vec<PathBuf> = db.contents.map(|f| f.unwrap().path()).collect();
 
-    //     let _ = &file.add_tags(&file_tags).unwrap();
-    //     // add file
-    //     db.update_file(&file).unwrap();
-    //     let old_tags_from_db = db.get_tags_from_hash(&file.file_hash).unwrap();
-    //     assert_eq!(&old_tags_from_db, &file.tags);
-    //     // change some tags
-    //     file.remove_tag("epic_fail").ok();
-    //     file.add_tag("awesome_tag").ok();
+        // "files"
+        let mut files_path = db.path.clone();
+        files_path.push("files");
 
-    //     // update file already in database with the newer tags
-    //     db.update_file(&file).unwrap();
-    //     let new_tags_from_db = db.get_tags_from_hash(&file.file_hash).unwrap();
+        // "sqlite.db"
+        let mut sqlite_db_file_path = db.path.clone();
+        sqlite_db_file_path.push("sqlite.db");
 
-    //     // test: the updated tags should be given back
-    //     assert_eq!(&new_tags_from_db, &file.tags);
-    // }
+        // Check if files in db.contents
+        assert_eq!(path_iter, vec![files_path, sqlite_db_file_path]);
+    }
 
-    // #[test]
-    // fn should_database_file_get_added_and_deleted() {
-    //     let db = create_random_tagdatabase();
+    /// We upload a bunch of random files and see if they're here
+    #[test]
+    fn should_files_upload_in_db() {
+        use rand::Rng;
 
-    //     let mut file1 = create_random_tagfile();
-    //     let mut file1_tags = HashSet::new();
+        let db = TagDatabase::create_random_tagdatabase();
 
-    //     file1_tags.insert("cool".to_string());
-    //     file1_tags.insert("amazing".to_string());
-    //     file1_tags.insert("epic_fail".to_string());
+        let n_files = rand::thread_rng().gen_range(2..20);
+        for _i in 0..n_files {
+            let random_tagfile = crate::TagFile::create_random_tagfile();
+            let _ = db.upload_file(&random_tagfile);
+        }
 
-    //     let _ = &file1.add_tags(&file1_tags).unwrap();
+        let mut files_path = db.path;
+        files_path.push("files");
 
-    //     // add file 1 to db
-    //     db.update_file(&file1).unwrap();
-
-    //     // test: do tag tables in the database truly contain file1's hash?
-    //     assert!(db
-    //         .get_hashes_from_tag("cool")
-    //         .unwrap()
-    //         .contains(&file1.file_hash));
-    //     assert!(db
-    //         .get_hashes_from_tag("amazing")
-    //         .unwrap()
-    //         .contains(&file1.file_hash));
-    //     assert!(db
-    //         .get_hashes_from_tag("epic_fail")
-    //         .unwrap()
-    //         .contains(&file1.file_hash));
-
-    //     let file_from_db = db.get_tagfile_from_hash(&file1.file_hash).unwrap();
-
-    //     // test: the hash of the file we are adding should be the hash stored in the database
-    //     assert_eq!(&file_from_db.file_hash, &file1.file_hash);
-
-    //     // add another different file to db
-    //     let mut file2 = create_random_tagfile();
-    //     let _ = &file2.add_tag("cool");
-    //     db.update_file(&file2).unwrap();
-
-    //     // remove file1 from db, now only file2 is there
-    //     db.remove_file(&file1).unwrap();
-
-    //     // test: file1 shouldn't exist anymore and it will return an Err
-    //     assert!(db.get_tagfile_from_hash(&file1.file_hash).is_err());
-
-    //     // test: the file hash shouldn't be contained in the tag tables anymore
-    //     println!("{:?}", db.get_hashes_from_tag("cool").unwrap());
-
-    //     // the "cool" tag table still contains the hash from FILE 2 but not the one from FILE 1
-    //     assert!(db
-    //         .get_hashes_from_tag("cool")
-    //         .unwrap()
-    //         .contains(&file2.file_hash));
-    //     assert!(!db
-    //         .get_hashes_from_tag("cool")
-    //         .unwrap()
-    //         .contains(&file1.file_hash));
-
-    //     // SQL will delete those tables since they only contained the one file hash we deleted
-    //     // so the function will Err()
-    //     assert!(!db.get_hashes_from_tag("amazing").is_err());
-    //     assert!(!db.get_hashes_from_tag("epic_fail").is_err());
-    // }
+        assert_eq!(files_path.read_dir().unwrap().count(), n_files);
+    }
 }

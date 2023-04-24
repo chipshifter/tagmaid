@@ -11,6 +11,9 @@ use std::fs::{self, File, ReadDir};
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
+#[cfg(test)]
+use rand::distributions::{Alphanumeric, DistString};
+
 
 /// Serialises `HashSet<String>` (used for file tags) into JSON,
 /// then converts it into bytes (`Vec<u8>`) for `rusqlite` to store it in the database.
@@ -72,13 +75,14 @@ impl SqliteDatabase {
             &path.display()
         );
 
-        
-        Ok(SqliteDatabase { db: Self::open_db_connection(&path)? })
+        Ok(SqliteDatabase {
+            db: Self::open_db_connection(&path)?,
+        })
     }
 
     pub fn open_db_connection(sqlite_file_path: &PathBuf) -> Result<Connection> {
-        let db =
-        Connection::open(sqlite_file_path).context("Couldn't open a connection to SQLite database")?;
+        let db = Connection::open(sqlite_file_path)
+            .context("Couldn't open a connection to SQLite database")?;
 
         debug!("SqliteDatabase - initialise_default() - Creating _files table if not exists");
 
@@ -95,9 +99,9 @@ impl SqliteDatabase {
         )
         .context("Couldn't create '_files' table for database")?;
 
-        /// Creates the `_tags` table.
-        /// `tag_name`: The tag name
-        /// `upload_count`: The amount of files with the `tag_name` tag
+        // Creates the `_tags` table.
+        //  `tag_name`: The tag name
+        //  `upload_count`: The amount of files with the `tag_name` tag
         db.execute(
             "CREATE TABLE IF NOT EXISTS _tags (
                 id              INTEGER PRIMARY KEY,
@@ -116,11 +120,12 @@ impl SqliteDatabase {
     /// If a tag is already present, nothing will change (and it will return Ok())
     pub fn add_tag(&self, tag: &str) -> Result<()> {
         let db: &Connection = &self.db;
-        
+
         db.execute(
             "INSERT INTO _tags (tag_name, upload_count) VALUES (?1, ?2) ON CONFLICT DO NOTHING",
             (tag, 0),
-        ).context("Couldn't add tag {tag} in _tags table")?;
+        )
+        .context("Couldn't add tag {tag} in _tags table")?;
 
         Ok(())
     }
@@ -128,11 +133,9 @@ impl SqliteDatabase {
     /// Removes a given `tag` from `_tags` table
     pub fn remove_tag(&self, tag: &str) -> Result<()> {
         let db: &Connection = &self.db;
-        
-        db.execute(
-            "DELETE FROM _tags WHERE tag_name IS :tag",
-            &[(":tag", tag)],
-        ).context("Couldn't remove tag {tag} in _tags table")?;
+
+        db.execute("DELETE FROM _tags WHERE tag_name IS :tag", &[(":tag", tag)])
+            .context("Couldn't remove tag {tag} in _tags table")?;
 
         Ok(())
     }
@@ -143,9 +146,11 @@ impl SqliteDatabase {
     pub fn get_tag_count(&self, tag: &str) -> Result<i64> {
         let db: &Connection = &self.db;
 
-        return Ok(db.query_row("SELECT upload_count FROM _tags WHERE tag_name IS :tag",
-        &[(":tag", tag)],
-        |row| row.get(0),)?);
+        return Ok(db.query_row(
+            "SELECT upload_count FROM _tags WHERE tag_name IS :tag",
+            &[(":tag", tag)],
+            |row| row.get(0),
+        )?);
     }
 
     /// Sets `upload_count` attribute to `tag_count` on a given `tag` in the `_tags` table.
@@ -157,7 +162,8 @@ impl SqliteDatabase {
         db.execute(
             "UPDATE _tags SET upload_count = ?1 WHERE tag_name IS ?2",
             rusqlite::params![tag_count, tag],
-        ).context("Couldn't update tag count for tag {tag} in database")?;
+        )
+        .context("Couldn't update tag count for tag {tag} in database")?;
 
         Ok(())
     }
@@ -178,21 +184,20 @@ impl SqliteDatabase {
     pub fn sync_tag_count(&self, tag: &str) -> Result<()> {
         let db: &Connection = &self.db;
 
-        // Get the number of rows on a given tag table. 
+        // Get the number of rows on a given tag table.
         // If it fails we assume there are no results.
 
         // Rusqlite's named parameters don't work for table names,
         // that's why I'm using format!().......
         let query = format!("SELECT COUNT(*) as count FROM {tag}");
-        let count: i64 = db.query_row(query.as_str(),
-        (),
-        |row| row.get(0),).unwrap_or(0);
+        let count: i64 = db
+            .query_row(query.as_str(), (), |row| row.get(0))
+            .unwrap_or(0);
 
         // Update the tag upload count with what we just calculated
         let _ = &self.set_tag_count(tag, count)?;
         Ok(())
     }
-
 
     /// Adds an entry of the specified TagFile in the `_files` table of the database.
     /// It does not handle the tables for tags: update_tags_to_file() does.
@@ -408,7 +413,6 @@ impl SqliteDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::distributions::{Alphanumeric, DistString};
     use std::fs::File;
 
     fn get_random_db_connection() -> SqliteDatabase {
@@ -419,7 +423,7 @@ mod tests {
         let tmp_db = SqliteDatabase::open_db_connection(&tmp_db_dir).unwrap();
         return SqliteDatabase { db: tmp_db };
     }
-    
+
     #[test]
     fn should_tag_entry_get_added() {
         let db = get_random_db_connection();
@@ -474,7 +478,7 @@ mod tests {
 
         assert!(db.add_tag("test").is_ok());
         assert_eq!(db.get_tag_count("test").ok(), Some(0));
-        
+
         assert!(db.set_tag_count("test", 69).is_ok());
         assert_eq!(db.get_tag_count("test").ok(), Some(69));
 
@@ -501,20 +505,18 @@ mod tests {
         assert_eq!(db.get_tag_count("test").ok(), Some(0));
 
         // Add `n` random files
-        let n_files: i64 = rand::thread_rng().gen_range(2..20);
+        let n_files = rand::thread_rng().gen_range(2..20);
         for _i in 0..n_files {
             // We add a random file with tag test
-            let mut tmp_tagfile = crate::TagDatabase::create_random_tagfile();
+            let mut tmp_tagfile = crate::TagFile::create_random_tagfile();
             let _ = tmp_tagfile.add_tag("test");
             assert!(db.add_file(&tmp_tagfile).is_ok());
             assert!(db.update_tags_to_file(&tmp_tagfile).is_ok());
         }
-        
-        // Now there is 1 file with tag 'test' so syncing it back will `n` 
+
+        // Now there is 1 file with tag 'test' so syncing it back will `n`
         // (for the `n` files we added)
         assert!(db.sync_tag_count("test").is_ok());
         assert_eq!(db.get_tag_count("test").ok(), Some(n_files));
     }
-
-
 }

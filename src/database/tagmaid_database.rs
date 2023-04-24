@@ -183,7 +183,4 @@ mod tests {
         // We check if it found the right TagFile
         assert_eq!(db.get_tagfile_from_hash(&tf_hash).ok(), Some(tf));
     }
-
-    
-    fn
 }

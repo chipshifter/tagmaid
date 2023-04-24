@@ -601,13 +601,23 @@ impl TagMaid {
             Some(tagfile) => {
                 ui.add_space(5.0);
                 ui.vertical_centered(|ui| {
-                    ui.label(egui::RichText::new("Are you sure you want to remove this file?").font(egui::FontId::monospace(20.0)));
-                    ui.label(egui::RichText::new("All the tags will be deleted").font(egui::FontId::monospace(14.0)));
+                    ui.label(
+                        egui::RichText::new("Are you sure you want to remove this file?")
+                            .font(egui::FontId::monospace(20.0)),
+                    );
+                    ui.label(
+                        egui::RichText::new("All the tags will be deleted")
+                            .font(egui::FontId::monospace(14.0)),
+                    );
                     ui.add_space(5.0);
                     ui.vertical_centered_justified(|ui| {
                         ui.columns(2, |ui| {
-                            let yes_button_text = egui::RichText::new("Yes, remove").font(egui::FontId::monospace(14.0)).color(egui::Color32::RED);
-                            let no_button_text = egui::RichText::new("No, cancel").font(egui::FontId::monospace(14.0)).color(egui::Color32::BLACK);
+                            let yes_button_text = egui::RichText::new("Yes, remove")
+                                .font(egui::FontId::monospace(14.0))
+                                .color(egui::Color32::RED);
+                            let no_button_text = egui::RichText::new("No, cancel")
+                                .font(egui::FontId::monospace(14.0))
+                                .color(egui::Color32::BLACK);
                             if ui[0].button(yes_button_text).clicked() {
                                 // Removing all tags and calling update_tagfile()
                                 // will remove it from the database
@@ -615,7 +625,10 @@ impl TagMaid {
                                 cleared_tagfile.remove_all_tags().ok();
                                 let _ = self.db.update_tagfile(&cleared_tagfile);
                                 // We remove the file_hash of the deleted file from the results
-                                self.results.lock().unwrap().retain(|hash| hash != &cleared_tagfile.file_hash);
+                                self.results
+                                    .lock()
+                                    .unwrap()
+                                    .retain(|hash| hash != &cleared_tagfile.file_hash);
 
                                 // File is deleted, so we go back on results instead of view mode
                                 self.mode = ViewPage::Results;
@@ -636,7 +649,7 @@ impl TagMaid {
 
                     let height_limit = 340.0;
                     let width_limit = 650.0;
-    
+
                     let img_size: Vec2 = image_texture.size_vec2();
                     let mut scaled_height = height_limit.clone();
                     let mut scaled_width = &img_size.x * height_limit / &img_size.y;
@@ -648,10 +661,9 @@ impl TagMaid {
                         ui.image(image_texture.id(), egui::vec2(scaled_width, scaled_height));
                     });
                 });
-            },
+            }
             None => {
                 self.mode = ViewPage::Results;
-
             }
         }
     }

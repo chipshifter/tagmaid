@@ -98,7 +98,9 @@ impl TagMaidCache {
                 cache.insert(label, texture);
                 return Ok(());
             }
-            Err(err) => bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}"),
+            Err(err) => {
+                bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}")
+            }
         }
     }
 
