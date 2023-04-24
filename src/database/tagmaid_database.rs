@@ -147,6 +147,13 @@ impl TagMaidDatabase {
         let tags = &self.get_tagfile_from_hash(&hash)?.tags;
         return Ok(tags.to_owned());
     }
+
+    pub fn get_tag_count(&self, tag: &str) -> Option<i64> {
+        let fs_db_mutex = &self.get_fs_db();
+        let fs_db = fs_db_mutex.lock().unwrap();
+        let sql_db = &fs_db.sqlite_database;
+        return sql_db.get_tag_count(tag).ok();
+    }
 }
 
 #[cfg(test)]

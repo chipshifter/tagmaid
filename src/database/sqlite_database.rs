@@ -171,6 +171,28 @@ impl SqliteDatabase {
         Ok(())
     }
 
+    /// Synchronises the tag upload count with how many rows there
+    /// are in a tag table (= number of files with the tag in db)
+    /// It is a rather expensive call (it iterates though every row
+    /// in the table you call to count) so it is not called often.
+    pub fn sync_tag_count(&self, tag: &str) -> Result<()> {
+        let db: &Connection = &self.db;
+
+        // Get the number of rows on a given tag table. 
+        // If it fails we assume there are no results.
+
+        // Rusqlite's named parameters don't work for table names,
+        // that's why I'm using format!().......
+        let query = format!("SELECT COUNT(*) as count FROM {tag}");
+        let count: i64 = db.query_row(query.as_str(),
+        (),
+        |row| row.get(0),).unwrap_or(0);
+
+        // Update the tag upload count with what we just calculated
+        let _ = &self.set_tag_count(tag, count)?;
+        Ok(())
+    }
+
 
     /// Adds an entry of the specified TagFile in the `_files` table of the database.
     /// It does not handle the tables for tags: update_tags_to_file() does.
@@ -461,4 +483,31 @@ mod tests {
         assert!(db.add_tag("test").is_ok());
         assert_eq!(db.get_tag_count("test").ok(), Some(69));
     }
+
+    #[test]
+    fn should_tag_count_sync() {
+        let db = get_random_db_connection();
+
+        assert!(db.add_tag("test").is_ok());
+
+        // We add an arbritrary number
+        assert!(db.set_tag_count("test", 69).is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(69));
+
+        // Since the db is new, it should sync back to 0
+        assert!(db.sync_tag_count("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(0));
+
+        // We add a random file with tag test
+        let mut tmp_tagfile = crate::TagDatabase::create_random_tagfile();
+        let _ = tmp_tagfile.add_tag("test");
+        assert!(db.add_file(&tmp_tagfile).is_ok());
+        assert!(db.update_tags_to_file(&tmp_tagfile).is_ok());
+
+        // Now there is 1 file with tag 'test' so syncing it back will give 1
+        assert!(db.sync_tag_count("test").is_ok());
+        assert_eq!(db.get_tag_count("test").ok(), Some(1));
+    }
+
+
 }

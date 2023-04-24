@@ -11,6 +11,8 @@ use std::fs::{self, File, ReadDir};
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
+use std::io::Write;
+use rand::distributions::{Alphanumeric, DistString};
 
 pub struct TagDatabase {
     pub name: String,
@@ -187,6 +189,23 @@ impl TagDatabase {
         Ok(hashes)
     }
 
+    #[cfg(test)]
+    pub fn create_random_tagfile() -> TagFile {
+        // random 16-char string
+        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+
+        let tmp_dir = tempfile::tempdir().unwrap();
+        // into_path is necessary for tempdir to persist in the file system
+        let tmp_file_path = tmp_dir.into_path().as_path().join(random_string);
+
+        let mut temp_file = File::create(&tmp_file_path).unwrap();
+        let random_string_2 = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+        let _ = &temp_file.write_all(random_string_2.as_bytes()).unwrap();
+
+        let tagfile = TagFile::initialise_from_path(&tmp_file_path).unwrap();
+        return tagfile;
+    }
+
     // pub fn cleanup(&self) -> Result<()> {
     //     // Stage 1: Mark for cleanup
     //     let file_hashes = &self.get_all_file_hashes()?;
@@ -220,10 +239,6 @@ impl TagDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::distributions::{Alphanumeric, DistString};
-    use std::fs::File;
-    use std::io::Write;
-
     fn create_random_tagdatabase() -> TagDatabase {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_path = tmp_dir.into_path();
@@ -235,22 +250,6 @@ mod tests {
         return db;
     }
 
-    fn create_random_tagfile() -> TagFile {
-        // random 16-char string
-        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-
-        let tmp_dir = tempfile::tempdir().unwrap();
-        // into_path is necessary for tempdir to persist in the file system
-        let tmp_file_path = tmp_dir.into_path().as_path().join(random_string);
-
-        let mut temp_file = File::create(&tmp_file_path).unwrap();
-        let random_string_2 = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-        let _ = &temp_file.write_all(random_string_2.as_bytes()).unwrap();
-
-        let tagfile = TagFile::initialise_from_path(&tmp_file_path).unwrap();
-        return tagfile;
-    }
-
     fn create_random_tagfile_in_tagdatabase() -> TagFile {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_path = tmp_dir.into_path();
@@ -259,7 +258,7 @@ mod tests {
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
         let db: TagDatabase = TagDatabase::initialise(random_string, Some(tmp_path)).unwrap();
-        let tagfile = create_random_tagfile();
+        let tagfile = TagDatabase::create_random_tagfile();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         return uploaded_tagfile;
     }
@@ -277,7 +276,7 @@ mod tests {
 
     #[test]
     fn should_tagfile_remove_in_fs() {
-        let tagfile = create_random_tagfile();
+        let tagfile = TagDatabase::create_random_tagfile();
         let db = create_random_tagdatabase();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         let tagfile_path = uploaded_tagfile.get_path();
