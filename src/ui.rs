@@ -272,18 +272,20 @@ impl TagMaid {
         let logo = ui.image(image_texture.id(), egui::vec2(60.0, 60.0));
         let response = &logo.interact(egui::Sense::click());
         if response.clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-            match self.mode {
-                ViewPage::View => self.mode = ViewPage::Results,
-                ViewPage::Edit => {
-                    self.edit_add_tags = String::new(); //reset UI if go back (doesn't affect tags that get added)
-                    self.edit_tags = BTreeSet::new();
-                    self.mode = ViewPage::Search;
-                }
-                _ => self.mode = ViewPage::Search,
-            }
+            self.go_back()
         }
     }
-
+    fn go_back(&mut self) {
+        match self.mode {
+            ViewPage::View => self.mode = ViewPage::Results,
+            ViewPage::Edit => {
+                self.edit_add_tags = String::new(); //reset UI if go back (doesn't affect tags that get added)
+                self.edit_tags = BTreeSet::new();
+                self.mode = ViewPage::Search;
+            }
+            _ => self.mode = ViewPage::Search,
+        }
+    }
     /// The "Add" tab. Checks if a file can be edited, and if there is,
     /// it redirects the user to the editing tab. Otherwise it redirects
     /// to `ui_add_drag()`
@@ -435,7 +437,7 @@ impl TagMaid {
                             );
                             let add_tag_input = ui.add(
                                 egui::TextEdit::singleline(&mut self.edit_add_tags)
-                                    .min_size(egui::vec2(620.0, 18.0)),
+                                    .min_size(egui::vec2(600.0, 18.0)),
                             );
                             // THIS SUCKS ASS!!!!!
                             if !add_tag_input.has_focus() && !add_tag_input.lost_focus() {
@@ -456,6 +458,10 @@ impl TagMaid {
                                 }
                                 self.edit_add_tags = String::new();
                             }
+                            ui.add_space(5.0);
+                            if ui.button("Done").clicked() {
+                                self.go_back();
+                            }
                         });
                     });
                 });
@@ -474,7 +480,7 @@ impl TagMaid {
             ui.centered_and_justified(|ui| {
                 ui.label(egui::RichText::new("Drag a file here to add it").font(egui::FontId::monospace(40.0)));
                 ui.add_space(20.0);
-                let click_label = ui.label(egui::RichText::new("...or click here to import it yourself").font(egui::FontId::monospace(20.0)));
+                let click_label = ui.label(egui::RichText::new("...or click here to import it yourself").underline().font(egui::FontId::monospace(20.0)));
                 let click_label_response = click_label.interact(egui::Sense::click());
                 if click_label_response.clicked() && self.path_future.is_none() {
                     self.path_future = Some(std::thread::spawn(|| rfd::FileDialog::new().pick_file()));
