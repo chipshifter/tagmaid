@@ -102,7 +102,9 @@ pub struct TagMaid {
     search: String,
     search_err: Option<String>,
     search_options: Option<Search>,
+    search_thread: Option<std::thread::JoinHandle<()>>,
     // Results
+    query: Option<Search>,
     update_search: Arc<Mutex<bool>>,
     results: Arc<Mutex<Vec<Vec<u8>>>>,
     // Add form
@@ -124,9 +126,11 @@ impl TagMaid {
             db: db,
             search: String::new(),
             results: Arc::new(Mutex::new(Vec::new())),
+            query: None,
             update_search: Arc::new(Mutex::new(false)),
             search_err: None,
             search_options: None,
+            search_thread: None,
             thumbnail_paths: Arc::new(RwLock::new(HashMap::new())),
             add_path: None,
             path_future: None,
@@ -702,7 +706,7 @@ impl TagMaid {
 
                         // Search wasn't cached
                         if !is_cached {
-                            let handle = std::thread::spawn(move || {
+                            self.search_thread = Some(std::thread::spawn(move || {
                                 match Self::get_results(
                                     search,
                                     nres.clone(),
@@ -715,38 +719,9 @@ impl TagMaid {
                                         nres.clone().lock().unwrap().clear();
                                     }
                                 }
-                            });
-                            /*
-                            So there was basically a data race or whatever its called because
-                            the thread takes time and the caching functions would accidentally
-                            access the previous result because the thread wasn't updating it yet
-
-                            So... I used join(), it works perfectly as intended, but this makes
-                            me question whether it defeats the whole purpose of the thread. Not that it
-                            panics or whatever, but idk.
-
-                            I couldn't implement the "put in cache" apart in the get_results() function 
-                            because the cache is a RefCell and even though it compiles and works fine,
-                            the "real" RefCell never gets updated so the stuff never got cached.
-                            
-                            Idk how to fix this other than join(). Imo given that we can only do one search
-                            at once (as a user) I'd say it's fine right now. But something feels wrong. 
-                            */
-                            if handle.join().is_err() {
-                                // Search failed, stop hanging it
-                                *self.update_search.lock().unwrap() = false;
-                            };
-
-                            // Attempts to cache the search results
-                            match self.db.get_cache().cache_search(v.clone(), self.results.clone().lock().unwrap().to_vec()) {
-                                Ok(()) => {},
-                                Err(err) => {
-                                    // Fails silently because not being able to cache sometimes isn't
-                                    // that big of a deal
-                                    info!("WARNING: ui_search(): Couldn't open cache as mutable because it was already being borrowed: {err}");
-                                }
-                            }
+                            }));
                         }
+                        self.query.replace(v);
 
                         // Search is done, send user to results page
                         self.mode = ViewPage::Results;
@@ -881,6 +856,7 @@ impl eframe::App for TagMaid {
         true
     }
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // TODO maybe move this non-ui update stuff into it's own function
         ctx.input(|i| {
             let a = &i.raw.dropped_files;
             if a.len() > 0 {
@@ -894,6 +870,27 @@ impl eframe::App for TagMaid {
                 }
             }
         });
+        if self.search_thread.is_some() {
+            if self.search_thread.as_ref().unwrap().is_finished() {
+                let handle = self.search_thread.take().unwrap();
+                if handle.join().is_err() {
+                    // Search failed stop hanging it
+                    *self.update_search.lock().unwrap() = false;
+                }
+
+                // Attempts to cache the search results
+                // Hopefully self.query is initialized
+                match self.db.get_cache().cache_search(self.query.as_ref().unwrap().clone(), self.results.clone().lock().unwrap().to_vec()) {
+                    Ok(()) => {},
+                    Err(err) => {
+                        // Fails silently because not being able to cache sometimes isn't
+                        // that big of a deal
+                        info!("WARNING: ui_search(): Couldn't open cache as mutable because it was already being borrowed: {err}");
+                    }
+                }
+                
+            }
+        }
         egui::TopBottomPanel::top("pan").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 if ui.button("Search").clicked() {
