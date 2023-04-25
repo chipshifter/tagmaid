@@ -728,7 +728,7 @@ impl TagMaid {
                                     }
                                 }
                             });
-                            /**
+                            /*
                             So there was basically a data race or whatever its called because
                             the thread takes time and the caching functions would accidentally
                             access the previous result because the thread wasn't updating it yet
