@@ -44,6 +44,23 @@ fn deserialise_tags(vec: &Vec<u8>) -> Result<HashSet<String>> {
 pub struct FilesDatabase;
 
 impl FilesDatabase {
+    pub fn create_files_table(db: &Connection) -> Result<()> {
+        debug!("SqliteDatabase - initialise_default() - Creating _files table if not exists");
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS _files (
+                id          INTEGER PRIMARY KEY,
+                file_name   TEXT NOT NULL,
+                file_path   TEXT UNIQUE,
+                file_hash   BLOB NOT NULL UNIQUE,
+                upload_date TIMESTAMP NOT NULL,
+                tags        BLOB
+            )",
+            (),
+        )
+        .context("Couldn't create '_files' table for database")?;
+        Ok(())
+    }
+
     /// Adds an entry of the specified TagFile in the `_files` table of the database.
     /// It does not handle the tables for tags: update_tags_to_file() does.
     pub fn add_file(db: &Connection, file: &TagFile) -> Result<()> {

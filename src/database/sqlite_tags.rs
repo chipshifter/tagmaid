@@ -23,6 +23,7 @@ impl TagsDatabase {
 
         Ok(())
     }
+    
     /// Adds a tag in the `_tags` table. Used to retain some information about the tags
     /// themselves (for now, only the amount of files)
     /// If a tag is already present, nothing will change (and it will return Ok())
