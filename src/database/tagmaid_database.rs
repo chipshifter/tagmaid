@@ -3,7 +3,7 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, tags_database::TagsDatabase};
+use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, sqlite_tags::TagsDatabase};
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
@@ -51,7 +51,7 @@ pub fn init() -> TagMaidDatabase {
 
     // None: no custom path, use local (we will change that to deal with configs in the future)
     let mut db_path = get_database_path(None).unwrap();
-    
+
     // Create /home/user/.local/.../tag-maid folder otherwise everything breaks
     if !std::path::Path::new(&db_path).exists() {
         std::fs::create_dir(&db_path).context(format!(

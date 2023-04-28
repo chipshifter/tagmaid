@@ -1,5 +1,5 @@
 use crate::data::cache::TagMaidCache;
-use crate::database::{tagmaid_database::TagMaidDatabase, tags_database::TagsDatabase};
+use crate::database::{tagmaid_database::TagMaidDatabase, sqlite_tags::TagsDatabase};
 use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
