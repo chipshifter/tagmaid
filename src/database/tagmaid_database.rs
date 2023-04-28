@@ -27,12 +27,34 @@ impl Clone for TagMaidDatabase {
     }
 }
 
+pub fn get_database_path(custom_parent_path: Option<PathBuf>) -> Result<PathBuf> {
+    // TODO: Custom path in a config file?
+    match custom_parent_path {
+        Some(path) => {
+            let mut tagmaid_path = path.clone();
+            tagmaid_path.push("tag-maid");
+            Ok(tagmaid_path)
+        }
+        None => {
+            let mut local_path = dirs::data_local_dir()
+                .context("Database: Couldn't find local user data path for storing the database")?;
+            local_path.push("tag-maid");
+            Ok(local_path)
+        }
+    }
+}
+
 /// Initialises the database.
 pub fn init() -> TagMaidDatabase {
     // TODO: Put db_name in Config
     let db_name = "frank";
-    let filesystem_db: FsDatabase = FsDatabase::initialise(db_name.to_owned(), None).unwrap();
-    let sqlite_db = SqliteDatabase::initialise(&db_name, None).unwrap();
+
+    // None: no custom path, use local (we will change that to deal with configs in the future)
+    let mut db_path = get_database_path(None).unwrap();
+    db_path.push(db_name);
+
+    let filesystem_db: FsDatabase = FsDatabase::initialise(&db_path).unwrap();
+    let sqlite_db = SqliteDatabase::initialise(&db_path).unwrap();
     info!("Initialising TagMaidDatabse of name {db_name}");
     return TagMaidDatabase {
         filesystem_db: Arc::new(Mutex::new(filesystem_db)),
@@ -189,13 +211,10 @@ impl TagMaidDatabase {
     #[cfg(test)]
     pub fn create_random_tagmaiddatabase() -> TagMaidDatabase {
         let random_fs_db = FsDatabase::create_random_fsdatabase();
-        let random_fs_db_name = random_fs_db.name.clone();
-        let mut random_fs_db_path = random_fs_db.path.clone();
-        random_fs_db_path.pop();
-        random_fs_db_path.pop();
+        let random_fs_db_path = random_fs_db.path.clone();
         return TagMaidDatabase {
             filesystem_db: Arc::new(Mutex::new(random_fs_db)),
-            sqlite_db: Arc::new(Mutex::new(SqliteDatabase::initialise(&random_fs_db_name, Some(random_fs_db_path)).unwrap())),
+            sqlite_db: Arc::new(Mutex::new(SqliteDatabase::initialise(&random_fs_db_path).unwrap())),
             cache: Arc::new(TagMaidCache::init()),
         };
     }
@@ -216,7 +235,7 @@ mod tests {
         //  - sqlite.db for the SQLite database
         //  - A "files" folder that contains all the uploaded files
 
-        // db.contents is a ReadDir reading from the database path.
+        // fs_db.contents is a ReadDir reading from the database path.
         // We turn that into a vector of PathBufs to compare with what is expected
         let path_iter: Vec<PathBuf> = fs_db.contents.map(|f| f.unwrap().path()).collect();
 

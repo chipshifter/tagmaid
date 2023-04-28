@@ -22,23 +22,6 @@ pub struct FsDatabase {
     pub contents: ReadDir,
 }
 
-pub fn get_database_path(custom_parent_path: Option<PathBuf>) -> Result<PathBuf> {
-    // TODO: Custom path in a config file?
-    match custom_parent_path {
-        Some(path) => {
-            let mut tagmaid_path = path.clone();
-            tagmaid_path.push("tag-maid");
-            Ok(tagmaid_path)
-        }
-        None => {
-            let mut local_path = dirs::data_local_dir()
-                .context("Database: Couldn't find local user data path for storing the database")?;
-            local_path.push("tag-maid");
-            Ok(local_path)
-        }
-    }
-}
-
 fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()> {
     info!(
         "hardlink_file_else_copy() - Hardlinking file from old path {} to new path {}",
@@ -65,18 +48,7 @@ fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()>
 }
 
 impl FsDatabase {
-    pub fn initialise(name: String, custom_path: Option<PathBuf>) -> Result<FsDatabase> {
-        let mut path: PathBuf = get_database_path(custom_path.clone())?;
-
-        if !Path::new(&path).exists() {
-            fs::create_dir(&path).context(format!(
-                "Can't create '{}' folder because it already exists",
-                &path.display()
-            ))?;
-        }
-
-        // IKA TODO: Handle edge cases for "name" variable
-        path.push(&name);
+    pub fn initialise(path: &PathBuf) -> Result<FsDatabase> {
         if !Path::new(&path).exists() {
             fs::create_dir(&path).context(format!(
                 "Can't create '{}' folder because it already exists",
@@ -92,11 +64,12 @@ impl FsDatabase {
                 &files_path.display()
             ))?;
         }
-
         let db_folder = fs::read_dir(&path)?;
+
         Ok(FsDatabase {
-            name: name,
-            path: path,
+            // A permanent solution to a temporary problem
+            name: path.file_name().expect("blah blah utf-8").to_str().unwrap_or("frank").to_owned(),
+            path: path.clone(),
             contents: db_folder,
         })
     }
@@ -143,12 +116,13 @@ impl FsDatabase {
     #[cfg(test)]
     pub fn create_random_fsdatabase() -> FsDatabase {
         let tmp_dir = tempfile::tempdir().unwrap();
-        let tmp_path = tmp_dir.into_path();
+        let mut tmp_path = tmp_dir.into_path();
 
         // random 16-char string
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+        tmp_path.push(random_string);
 
-        let db: FsDatabase = FsDatabase::initialise(random_string, Some(tmp_path)).unwrap();
+        let db: FsDatabase = FsDatabase::initialise(&tmp_path).unwrap();
         return db;
     }
 }
@@ -178,11 +152,10 @@ mod tests {
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
         let mut db_path = tmp_path.clone();
-        db_path.push("tag-maid");
         db_path.push(&random_string);
 
         let db: FsDatabase =
-            FsDatabase::initialise(random_string.to_string(), Some(tmp_path)).unwrap();
+            FsDatabase::initialise(&db_path).unwrap();
 
         // asserts we created the database properly by checking
         // the folder is there

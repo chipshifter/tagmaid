@@ -1,7 +1,6 @@
 //! SqliteDatabase is the internal component that handles everything SQL related
 //! to the `sqlite.db` database.
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::fs_database::get_database_path;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
@@ -62,12 +61,9 @@ pub struct SqliteDatabase {
 impl SqliteDatabase {
     /// Opens the connection to the database at a given path. The `name` path is the name
     /// of the parent folder which will contain `sqlite.db` (and the uploaded files).
-    pub fn initialise(name: &str, custom_path: Option<PathBuf>) -> Result<SqliteDatabase> {
+    pub fn initialise(db_path: &PathBuf) -> Result<SqliteDatabase> {
         info!("SqliteDatabase - initialise_default() - Initialising default database");
-
-        let mut path: PathBuf =
-            get_database_path(custom_path).context("Couldn't find database path")?;
-        path.push(name);
+        let mut path = db_path.clone();
         path.push("sqlite.db");
         debug!(
             "SqliteDatabase - initialise_default() - Opening connection to database at path {}",

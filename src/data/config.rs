@@ -47,7 +47,7 @@ impl Config {
     pub fn load() -> Self {
         // None because there will only be one config
         let inner: fn() -> Result<ConfigFs> = || {
-            let mut path = crate::database::fs_database::get_database_path(None)?;
+            let mut path = crate::database::tagmaid_database::get_database_path(None)?;
             path.push("tag-maid.cfg");
             if path.exists() {
                 let mut file = std::fs::File::open(path)?;
@@ -63,7 +63,7 @@ impl Config {
         Self::from_fs(res.unwrap_or_default())
     }
     pub fn save(&self) -> Result<()> {
-        let mut path = crate::database::fs_database::get_database_path(None)?;
+        let mut path = crate::database::tagmaid_database::get_database_path(None)?;
         path.push("tag-maid.cfg");
         std::fs::write(path, serde_json::to_string(&self.as_fs())?)?;
         Ok(())

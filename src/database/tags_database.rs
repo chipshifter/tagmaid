@@ -1,5 +1,5 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase, fs_database::get_database_path};
+use crate::database::{sqlite_database::SqliteDatabase};
 use anyhow::{bail, Context, Result};
 use log::*;
 use rusqlite::Connection;
