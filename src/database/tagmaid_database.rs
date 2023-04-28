@@ -3,7 +3,7 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::fs_database::FsDatabase;
+use crate::database::{fs_database::FsDatabase, tags_database::TagsDatabase};
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
@@ -152,7 +152,7 @@ impl TagMaidDatabase {
         let fs_db_mutex = &self.get_fs_db();
         let fs_db = fs_db_mutex.lock().unwrap();
         let sql_db = &fs_db.sqlite_database;
-        return sql_db.get_tag_count(tag).ok();
+        return TagsDatabase::get_tag_count(sql_db.get_connection(), tag).ok();
     }
 
     pub fn get_tag_info(&self, tag: String) -> TagInfo {

@@ -22,7 +22,7 @@ use crate::data::{
 };
 
 use crate::database::{
-    sqlite_database::SqliteDatabase, fs_database::FsDatabase, tagmaid_database::TagMaidDatabase,
+    fs_database::FsDatabase, sqlite_database::SqliteDatabase, tagmaid_database::TagMaidDatabase,
 };
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
@@ -718,7 +718,7 @@ impl TagMaid {
                                 is_cached = true;
                                 *nres.lock().unwrap() = search_results.clone();
                                 *nbool.clone().lock().unwrap() = false;
-                            },
+                            }
                             None => {}
                         }
 
@@ -898,15 +898,17 @@ impl eframe::App for TagMaid {
 
                 // Attempts to cache the search results
                 // Hopefully self.query is initialized
-                match self.db.get_cache().cache_search(self.query.as_ref().unwrap().clone(), self.results.clone().lock().unwrap().to_vec()) {
-                    Ok(()) => {},
+                match self.db.get_cache().cache_search(
+                    self.query.as_ref().unwrap().clone(),
+                    self.results.clone().lock().unwrap().to_vec(),
+                ) {
+                    Ok(()) => {}
                     Err(err) => {
                         // Fails silently because not being able to cache sometimes isn't
                         // that big of a deal
                         info!("WARNING: ui_search(): Couldn't open cache as mutable because it was already being borrowed: {err}");
                     }
                 }
-                
             }
         }
         egui::TopBottomPanel::top("pan").show(ctx, |ui| {

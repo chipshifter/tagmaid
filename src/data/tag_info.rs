@@ -1,5 +1,5 @@
 use crate::data::cache::TagMaidCache;
-use crate::database::tagmaid_database::TagMaidDatabase;
+use crate::database::{tagmaid_database::TagMaidDatabase, tags_database::TagsDatabase};
 use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
@@ -19,10 +19,11 @@ impl TagInfo {
         match db.get_cache().get_tag_info(&tag) {
             Some(tag_info) => tag_info,
             None => {
-                let tag_info = sql_db.get_tag_info(&tag).unwrap_or(TagInfo {
-                    tag: tag,
-                    upload_count: 0,
-                });
+                let tag_info =
+                    TagsDatabase::get_tag_info(sql_db.get_connection(), &tag).unwrap_or(TagInfo {
+                        tag: tag,
+                        upload_count: 0,
+                    });
 
                 db.get_cache().cache_tag_info(tag_info.clone()).ok();
 
