@@ -7,7 +7,6 @@ use rusqlite::Connection;
 pub struct TagsDatabase;
 
 impl TagsDatabase {
-
     pub fn create_tags_table(db: &Connection) -> Result<()> {
         // Creates the `_tags` table.
         //  `tag_name`: The tag name
@@ -122,7 +121,7 @@ mod tests {
     fn should_tag_entry_get_added() {
         let sql_db = SqliteDatabase::get_random_db_connection();
         let db = sql_db.get_connection();
-        
+
         // Err() because the tag isn't there yet
         assert!(TagsDatabase::get_tag_count(db, "test").is_err());
 
@@ -154,7 +153,7 @@ mod tests {
     fn should_tag_count_increase() {
         let sql_db = SqliteDatabase::get_random_db_connection();
         let db = sql_db.get_connection();
-        
+
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
 
@@ -215,7 +214,9 @@ mod tests {
             let mut tmp_tagfile = crate::TagFile::create_random_tagfile();
             let _ = tmp_tagfile.add_tag("test");
             assert!(FilesDatabase::add_file(sql_db.get_connection(), &tmp_tagfile).is_ok());
-            assert!(FilesDatabase::update_tags_to_file(sql_db.get_connection(), &tmp_tagfile).is_ok());
+            assert!(
+                FilesDatabase::update_tags_to_file(sql_db.get_connection(), &tmp_tagfile).is_ok()
+            );
         }
 
         // Now there is 1 file with tag 'test' so syncing it back will `n`

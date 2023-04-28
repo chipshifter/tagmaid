@@ -219,8 +219,7 @@ impl TagFile {
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
         tmp_path.push(random_string);
 
-        let db: crate::FsDatabase =
-            crate::FsDatabase::initialise(&tmp_path).unwrap();
+        let db: crate::FsDatabase = crate::FsDatabase::initialise(&tmp_path).unwrap();
         let tagfile = TagFile::create_random_tagfile();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         return uploaded_tagfile;

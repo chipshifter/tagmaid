@@ -3,13 +3,16 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, sqlite_tags::TagsDatabase, sqlite_files::FilesDatabase};
+use crate::database::{
+    fs_database::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
+    sqlite_tags::TagsDatabase,
+};
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex, MutexGuard};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 pub struct TagMaidDatabase {
     pub filesystem_db: Arc<Mutex<FsDatabase>>,
@@ -54,10 +57,12 @@ pub fn init() -> TagMaidDatabase {
 
     // Create /home/user/.local/.../tag-maid folder otherwise everything breaks
     if !std::path::Path::new(&db_path).exists() {
-        std::fs::create_dir(&db_path).context(format!(
-            "Can't create '{}' folder because it already exists",
-            &db_path.display()
-        )).ok();
+        std::fs::create_dir(&db_path)
+            .context(format!(
+                "Can't create '{}' folder because it already exists",
+                &db_path.display()
+            ))
+            .ok();
     }
 
     db_path.push(db_name);
@@ -223,7 +228,9 @@ impl TagMaidDatabase {
         let random_fs_db_path = random_fs_db.path.clone();
         return TagMaidDatabase {
             filesystem_db: Arc::new(Mutex::new(random_fs_db)),
-            sqlite_db: Arc::new(Mutex::new(SqliteDatabase::initialise(&random_fs_db_path).unwrap())),
+            sqlite_db: Arc::new(Mutex::new(
+                SqliteDatabase::initialise(&random_fs_db_path).unwrap(),
+            )),
             cache: Arc::new(TagMaidCache::init()),
         };
     }
@@ -233,12 +240,14 @@ impl TagMaidDatabase {
 mod tests {
     use super::*;
 
-
     #[test]
     fn should_tagmaiddatabase_structure_be_correct() {
         let db = TagMaidDatabase::create_random_tagmaiddatabase();
         // (sigh)
-        let fs_db = Arc::try_unwrap(db.filesystem_db).unwrap().into_inner().unwrap();
+        let fs_db = Arc::try_unwrap(db.filesystem_db)
+            .unwrap()
+            .into_inner()
+            .unwrap();
 
         // The database when initialised creates the following things in the parent folder:
         //  - sqlite.db for the SQLite database
@@ -259,7 +268,6 @@ mod tests {
         // Check if files in db.contents
         assert_eq!(path_iter, vec![files_path, sqlite_db_file_path]);
     }
-
 
     #[test]
     fn should_tagfile_upload_and_retrieve() {

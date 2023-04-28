@@ -1,7 +1,7 @@
 //! FsDatabase is the old database interface. It is in the process of being repurposed as the
 //! "filesystem" interface, used for hardlinking files to the database path etc.
 use crate::data::tag_file::TagFile;
-use crate::database::sqlite_database::{SqliteDatabase};
+use crate::database::sqlite_database::SqliteDatabase;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
@@ -68,7 +68,12 @@ impl FsDatabase {
 
         Ok(FsDatabase {
             // A permanent solution to a temporary problem
-            name: path.file_name().expect("blah blah utf-8").to_str().unwrap_or("frank").to_owned(),
+            name: path
+                .file_name()
+                .expect("blah blah utf-8")
+                .to_str()
+                .unwrap_or("frank")
+                .to_owned(),
             path: path.clone(),
             contents: db_folder,
         })
@@ -154,8 +159,7 @@ mod tests {
         let mut db_path = tmp_path.clone();
         db_path.push(&random_string);
 
-        let db: FsDatabase =
-            FsDatabase::initialise(&db_path).unwrap();
+        let db: FsDatabase = FsDatabase::initialise(&db_path).unwrap();
 
         // asserts we created the database properly by checking
         // the folder is there

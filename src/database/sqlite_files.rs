@@ -1,5 +1,5 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase};
+use crate::database::sqlite_database::SqliteDatabase;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
@@ -243,5 +243,4 @@ impl FilesDatabase {
 
         Ok(())
     }
-
 }
