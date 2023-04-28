@@ -1,4 +1,4 @@
-//! TagDatabase is the old database interface. It is in the process of being repurposed as the
+//! FsDatabase is the old database interface. It is in the process of being repurposed as the
 //! "filesystem" interface, used for hardlinking files to the database path etc.
 use crate::data::tag_file::TagFile;
 use crate::database::sqlite_database::{SqliteDatabase, TagFileSqlite};
@@ -15,7 +15,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-pub struct TagDatabase {
+pub struct FsDatabase {
     pub name: String,
     pub path: PathBuf,
     pub contents: ReadDir,
@@ -64,8 +64,8 @@ fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()>
     Ok(())
 }
 
-impl TagDatabase {
-    pub fn initialise(name: String, custom_path: Option<PathBuf>) -> Result<TagDatabase> {
+impl FsDatabase {
+    pub fn initialise(name: String, custom_path: Option<PathBuf>) -> Result<FsDatabase> {
         let mut path: PathBuf = get_database_path(custom_path.clone())?;
 
         if !Path::new(&path).exists() {
@@ -96,7 +96,7 @@ impl TagDatabase {
         let sqlite_databases = SqliteDatabase::initialise(&name, custom_path)?;
 
         let db_folder = fs::read_dir(&path)?;
-        Ok(TagDatabase {
+        Ok(FsDatabase {
             name: name,
             path: path,
             contents: db_folder,
@@ -115,14 +115,14 @@ impl TagDatabase {
     pub fn upload_file(&self, file: &TagFile) -> Result<TagFile> {
         // Hardlinks the file we want to the tagmaid database path
         info!(
-            "TagDatabase - upload_file() - Uploading/hardlinking file {} to filesystem",
+            "FsDatabase - upload_file() - Uploading/hardlinking file {} to filesystem",
             &file.display()
         );
 
-        info!("TagDatabase - upload_file() - Getting unix timestamp for now");
+        info!("FsDatabase - upload_file() - Getting unix timestamp for now");
         let now_unix_timestamp = Utc::now().timestamp();
 
-        info!("TagDatabase - upload_file() - Getting a trimmed hash of the file");
+        info!("FsDatabase - upload_file() - Getting a trimmed hash of the file");
         let trimmed_hash_hex = crate::data::tag_util::trimmed_hash_hex(&file.file_hash)?;
         let mut db_files_path = self.path.clone();
         db_files_path.push("files");
@@ -144,7 +144,7 @@ impl TagDatabase {
     }
 
     pub fn remove_file(&self, file: &TagFile) -> Result<()> {
-        info!("TagDatabase - remove_file() - file: {}", &file.display());
+        info!("FsDatabase - remove_file() - file: {}", &file.display());
         fs::remove_file(&file.get_path()).with_context(|| {
             format!(
                 "Database: Couldn't remove file '{}' from filesystem",
@@ -163,7 +163,7 @@ impl TagDatabase {
     }
 
     pub fn get_tagfile_from_hash(&self, hash: &Vec<u8>) -> Result<TagFile> {
-        debug!("TagDatabase - get_tagfile_from_hash() - hash: {:?}", &hash);
+        debug!("FsDatabase - get_tagfile_from_hash() - hash: {:?}", &hash);
         Ok(self
             .sqlite_database
             .get_tagfile_from_hash(hash)
@@ -173,7 +173,7 @@ impl TagDatabase {
     }
 
     pub fn get_hashes_from_tag(&self, tag: &str) -> Result<HashSet<Vec<u8>>> {
-        info!("TagDatabase - get_hashes_from_tag() - tag: {}", &tag);
+        info!("FsDatabase - get_hashes_from_tag() - tag: {}", &tag);
         let db: &SqliteDatabase = &self.sqlite_database;
         let hashes = db
             .get_hashes_from_tag(&tag)
@@ -182,7 +182,7 @@ impl TagDatabase {
     }
 
     pub fn get_all_file_hashes(&self) -> Result<HashSet<Vec<u8>>> {
-        info!("TagDatabase - get_all_file_hashes()");
+        info!("FsDatabase - get_all_file_hashes()");
         let db: &SqliteDatabase = &self.sqlite_database;
         let hashes = db
             .get_all_file_hashes()
@@ -191,14 +191,14 @@ impl TagDatabase {
     }
 
     #[cfg(test)]
-    pub fn create_random_tagdatabase() -> TagDatabase {
+    pub fn create_random_fsdatabase() -> FsDatabase {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_path = tmp_dir.into_path();
 
         // random 16-char string
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
-        let db: TagDatabase = TagDatabase::initialise(random_string, Some(tmp_path)).unwrap();
+        let db: FsDatabase = FsDatabase::initialise(random_string, Some(tmp_path)).unwrap();
         return db;
     }
 }
@@ -210,8 +210,8 @@ mod tests {
 
     #[test]
     fn should_tagfile_upload_in_fs() {
-        let tagfile = TagFile::create_random_tagfile_in_tagdatabase();
-        let db = TagDatabase::create_random_tagdatabase();
+        let tagfile = TagFile::create_random_tagfile_in_fsdatabase();
+        let db = FsDatabase::create_random_fsdatabase();
 
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         assert_eq!(tagfile.file_hash, uploaded_tagfile.file_hash);
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn should_tagfile_remove_in_fs() {
         let tagfile = TagFile::create_random_tagfile();
-        let db = TagDatabase::create_random_tagdatabase();
+        let db = FsDatabase::create_random_fsdatabase();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         let tagfile_path = uploaded_tagfile.get_path();
 
@@ -245,8 +245,8 @@ mod tests {
         db_path.push("tag-maid");
         db_path.push(&random_string);
 
-        let db: TagDatabase =
-            TagDatabase::initialise(random_string.to_string(), Some(tmp_path)).unwrap();
+        let db: FsDatabase =
+            FsDatabase::initialise(random_string.to_string(), Some(tmp_path)).unwrap();
 
         // asserts we created the database properly by checking
         // the folder is there
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn should_delete_database() {
-        let db = TagDatabase::create_random_tagdatabase();
+        let db = FsDatabase::create_random_fsdatabase();
         // database is created. Path tag-maid/<random-name> exists
         let db_path = &db.path.clone();
         assert!(Path::new(&db_path).exists());
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn should_db_structure_be_correct() {
-        let db = TagDatabase::create_random_tagdatabase();
+        let db = FsDatabase::create_random_fsdatabase();
 
         // The database when initialised creates the following things in the parent folder:
         //  - sqlite.db for the SQLite database
@@ -307,7 +307,7 @@ mod tests {
     fn should_files_upload_in_db() {
         use rand::Rng;
 
-        let db = TagDatabase::create_random_tagdatabase();
+        let db = FsDatabase::create_random_fsdatabase();
 
         let n_files = rand::thread_rng().gen_range(2..20);
         for _i in 0..n_files {

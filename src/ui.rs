@@ -22,7 +22,7 @@ use crate::data::{
 };
 
 use crate::database::{
-    sqlite_database::SqliteDatabase, tag_database::TagDatabase, tagmaid_database::TagMaidDatabase,
+    sqlite_database::SqliteDatabase, fs_database::FsDatabase, tagmaid_database::TagMaidDatabase,
 };
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
@@ -224,7 +224,7 @@ impl TagMaid {
         info!("Grabbing results");
         // No cached results
         let fs_db_mutex = db.get_fs_db();
-        let fs_db: MutexGuard<TagDatabase> = fs_db_mutex.lock().unwrap();
+        let fs_db: MutexGuard<FsDatabase> = fs_db_mutex.lock().unwrap();
         let mut cands = match se.first_tag() {
             Some(s) => fs_db.get_hashes_from_tag(&s),
             None => fs_db.get_all_file_hashes(),

@@ -1,6 +1,6 @@
 use crate::data::cache::TagMaidCache;
 use crate::database::tagmaid_database::TagMaidDatabase;
-use crate::TagDatabase;
+use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, PartialEq)]

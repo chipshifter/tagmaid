@@ -1,7 +1,7 @@
 //! SqliteDatabase is the internal component that handles everything SQL related
 //! to the `sqlite.db` database.
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::tag_database::get_database_path;
+use crate::database::fs_database::get_database_path;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;

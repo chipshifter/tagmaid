@@ -3,7 +3,7 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::tag_database::TagDatabase;
+use crate::database::fs_database::FsDatabase;
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub struct TagMaidDatabase {
-    pub filesystem_db: Arc<Mutex<TagDatabase>>,
+    pub filesystem_db: Arc<Mutex<FsDatabase>>,
     cache: Arc<TagMaidCache>,
 }
 
@@ -28,7 +28,7 @@ impl Clone for TagMaidDatabase {
 pub fn init() -> TagMaidDatabase {
     // TODO: Put db_name in Config
     let db_name = "frank";
-    let filesystem_db: TagDatabase = TagDatabase::initialise(db_name.to_owned(), None).unwrap();
+    let filesystem_db: FsDatabase = FsDatabase::initialise(db_name.to_owned(), None).unwrap();
     info!("Initialising TagMaidDatabse of name {db_name}");
     return TagMaidDatabase {
         filesystem_db: Arc::new(Mutex::new(filesystem_db)),
@@ -37,7 +37,7 @@ pub fn init() -> TagMaidDatabase {
 }
 
 impl TagMaidDatabase {
-    pub fn get_fs_db(&self) -> Arc<Mutex<TagDatabase>> {
+    pub fn get_fs_db(&self) -> Arc<Mutex<FsDatabase>> {
         return self.filesystem_db.clone();
     }
 
@@ -162,7 +162,7 @@ impl TagMaidDatabase {
     #[cfg(test)]
     pub fn create_random_tagmaiddatabase() -> TagMaidDatabase {
         return TagMaidDatabase {
-            filesystem_db: Arc::new(Mutex::new(TagDatabase::create_random_tagdatabase())),
+            filesystem_db: Arc::new(Mutex::new(FsDatabase::create_random_fsdatabase())),
             cache: Arc::new(TagMaidCache::init()),
         };
     }

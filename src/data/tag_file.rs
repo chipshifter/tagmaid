@@ -211,15 +211,15 @@ impl TagFile {
     /// Creates a random TagFile instance that is uploaded to a random TagDatabase instance.
     /// File and database is located in temp directiories. Used for unit testing
     #[cfg(test)]
-    pub fn create_random_tagfile_in_tagdatabase() -> TagFile {
+    pub fn create_random_tagfile_in_fsdatabase() -> TagFile {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_path = tmp_dir.into_path();
 
         // random 16-char string
         let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
-        let db: crate::TagDatabase =
-            crate::TagDatabase::initialise(random_string, Some(tmp_path)).unwrap();
+        let db: crate::FsDatabase =
+            crate::FsDatabase::initialise(random_string, Some(tmp_path)).unwrap();
         let tagfile = TagFile::create_random_tagfile();
         let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
         return uploaded_tagfile;
