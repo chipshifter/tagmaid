@@ -51,6 +51,15 @@ pub fn init() -> TagMaidDatabase {
 
     // None: no custom path, use local (we will change that to deal with configs in the future)
     let mut db_path = get_database_path(None).unwrap();
+    
+    // Create /home/user/.local/.../tag-maid folder otherwise everything breaks
+    if !std::path::Path::new(&db_path).exists() {
+        std::fs::create_dir(&db_path).context(format!(
+            "Can't create '{}' folder because it already exists",
+            &db_path.display()
+        )).ok();
+    }
+
     db_path.push(db_name);
 
     let filesystem_db: FsDatabase = FsDatabase::initialise(&db_path).unwrap();
