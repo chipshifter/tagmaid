@@ -1,7 +1,7 @@
 //! FsDatabase is the old database interface. It is in the process of being repurposed as the
 //! "filesystem" interface, used for hardlinking files to the database path etc.
 use crate::data::tag_file::TagFile;
-use crate::database::sqlite_database::{SqliteDatabase, TagFileSqlite};
+use crate::database::sqlite_database::{SqliteDatabase};
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;

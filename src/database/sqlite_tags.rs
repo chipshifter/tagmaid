@@ -1,5 +1,5 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase};
+use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
 use anyhow::{bail, Context, Result};
 use log::*;
 use rusqlite::Connection;
@@ -214,8 +214,8 @@ mod tests {
             // We add a random file with tag test
             let mut tmp_tagfile = crate::TagFile::create_random_tagfile();
             let _ = tmp_tagfile.add_tag("test");
-            assert!(sql_db.add_file(&tmp_tagfile).is_ok());
-            assert!(sql_db.update_tags_to_file(&tmp_tagfile).is_ok());
+            assert!(FilesDatabase::add_file(sql_db.get_connection(), &tmp_tagfile).is_ok());
+            assert!(FilesDatabase::update_tags_to_file(sql_db.get_connection(), &tmp_tagfile).is_ok());
         }
 
         // Now there is 1 file with tag 'test' so syncing it back will `n`

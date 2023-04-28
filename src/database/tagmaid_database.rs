@@ -3,7 +3,7 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, sqlite_tags::TagsDatabase};
+use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, sqlite_tags::TagsDatabase, sqlite_files::FilesDatabase};
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
@@ -105,7 +105,7 @@ impl TagMaidDatabase {
         let sql_db = sql_db_mutex.lock().unwrap();
 
         // Sqlite
-        if sql_db.get_tagfile_from_hash(&tf.file_hash).is_err() {
+        if FilesDatabase::get_tagfile_from_hash(sql_db.get_connection(), &tf.file_hash).is_err() {
             // File isn't in db
             info!("Updating {tf}: File not present in SQL database, uploading it");
 
@@ -114,12 +114,12 @@ impl TagMaidDatabase {
             let fs_db_mutex = &self.get_fs_db();
             let uploaded_file = fs_db_mutex.lock().unwrap().upload_file(tf)?;
 
-            sql_db.add_file(&uploaded_file)?;
+            FilesDatabase::add_file(sql_db.get_connection(), &uploaded_file)?;
         } else {
             if (&tf.tags).is_empty() {
                 // File is already in database AND has no tags; we delete
                 info!("Updating {tf}: File has no tags, removing it");
-                sql_db.remove_file(&tf)?;
+                FilesDatabase::remove_file(sql_db.get_connection(), &tf)?;
 
                 // Removing the TagFile from the cache
                 match self.get_cache().clear_tagfile_cache(tf.clone()) {
@@ -141,7 +141,7 @@ impl TagMaidDatabase {
         }
 
         info!("Updating {tf}: Updating tags to SQL");
-        sql_db.update_tags_to_file(tf)?;
+        FilesDatabase::update_tags_to_file(sql_db.get_connection(), tf)?;
 
         Ok(())
     }
@@ -164,7 +164,7 @@ impl TagMaidDatabase {
         // It wasn't cached, so we perform a SQL search
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
-        let tagfile = sql_db.get_tagfile_from_hash(&hash)?;
+        let tagfile = FilesDatabase::get_tagfile_from_hash(sql_db.get_connection(), &hash)?;
 
         // This part is for caching the TagFile because it wasn't in the cache when
         // we checked.
@@ -183,7 +183,9 @@ impl TagMaidDatabase {
             "Getting tags from file hash {} (trimmed)",
             crate::data::tag_util::trimmed_hash_hex(&hash)?
         );
-        let tags = &self.get_tagfile_from_hash(&hash)?.tags;
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+        let tags = FilesDatabase::get_tagfile_from_hash(sql_db.get_connection(), &hash)?.tags;
         return Ok(tags.to_owned());
     }
 
@@ -201,8 +203,7 @@ impl TagMaidDatabase {
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
 
-        let hashes = sql_db
-            .get_hashes_from_tag(&tag)
+        let hashes = FilesDatabase::get_hashes_from_tag(sql_db.get_connection(), &tag)
             .with_context(|| format!("Database: Couldn't get hashes from tag {}", &tag))?;
         Ok(hashes)
     }
@@ -211,8 +212,7 @@ impl TagMaidDatabase {
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
 
-        let hashes = sql_db
-            .get_all_file_hashes()
+        let hashes = FilesDatabase::get_all_file_hashes(sql_db.get_connection())
             .context("Database: Couldn't get all file hashes")?;
         Ok(hashes)
     }
