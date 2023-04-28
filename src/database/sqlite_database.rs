@@ -1,19 +1,18 @@
 //! SqliteDatabase is the internal component that handles everything SQL related
 //! to the `sqlite.db` database.
-use crate::data::tag_file::TagFile;
+use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::tag_database::get_database_path;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
+#[cfg(test)]
+use rand::distributions::{Alphanumeric, DistString};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::fs::{self, File, ReadDir};
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
-#[cfg(test)]
-use rand::distributions::{Alphanumeric, DistString};
-
 
 /// Serialises `HashSet<String>` (used for file tags) into JSON,
 /// then converts it into bytes (`Vec<u8>`) for `rusqlite` to store it in the database.
@@ -138,6 +137,22 @@ impl SqliteDatabase {
             .context("Couldn't remove tag {tag} in _tags table")?;
 
         Ok(())
+    }
+
+    /// TagInfo, we will use this for futureproof reasons
+    pub fn get_tag_info(&self, tag: &str) -> Result<TagInfo> {
+        let db: &Connection = &self.db;
+
+        return Ok(db.query_row(
+            "SELECT upload_count FROM _tags WHERE tag_name IS :tag",
+            &[(":tag", tag)],
+            |row| {
+                Ok(TagInfo {
+                    tag: tag.to_owned(),
+                    upload_count: row.get(0).unwrap_or(0),
+                })
+            },
+        )?);
     }
 
     /// Retrieves the stored `upload_count` in `_tags` table. Note that it *could be* desynced

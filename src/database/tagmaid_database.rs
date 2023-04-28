@@ -2,7 +2,7 @@
 //! You probably want to use this if you deal with the files one way or another.
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
-use crate::data::{cache::TagMaidCache, tag_file::TagFile};
+use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
 use crate::database::tag_database::TagDatabase;
 use anyhow::{Context, Result};
 use log::*;
@@ -155,8 +155,12 @@ impl TagMaidDatabase {
         return sql_db.get_tag_count(tag).ok();
     }
 
+    pub fn get_tag_info(&self, tag: String) -> TagInfo {
+        return TagInfo::initialise(tag, &self);
+    }
+
     #[cfg(test)]
-    fn create_random_tagmaiddatabase() -> TagMaidDatabase {
+    pub fn create_random_tagmaiddatabase() -> TagMaidDatabase {
         return TagMaidDatabase {
             filesystem_db: Arc::new(Mutex::new(TagDatabase::create_random_tagdatabase())),
             cache: Arc::new(TagMaidCache::init()),

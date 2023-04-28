@@ -1,13 +1,13 @@
 //! File for managing the TagFile structure
 use crate::data::ui_util;
 use anyhow::{bail, Context, Result};
+#[cfg(test)]
+use rand::distributions::{Alphanumeric, DistString};
 use std::collections::HashSet;
 use std::fs::{File, Metadata};
 use std::io::Write;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-#[cfg(test)]
-use rand::distributions::{Alphanumeric, DistString};
 /// TagFile is a structure used to handle user files to TagDatabase. It contains
 /// some attributes related to the file, such as file name, path, hash, associated tags
 /// (if any present in the database) and a `File` instance for other file operations.

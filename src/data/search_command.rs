@@ -1,7 +1,7 @@
 use super::tag_util;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
-//Until database is finished
+// Until database is finished
 pub trait Database {
     fn get_tag_count(&self, name: &str) -> u64;
 }

@@ -5,6 +5,8 @@ use crate::database::sqlite_database::{SqliteDatabase, TagFileSqlite};
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
+#[cfg(test)]
+use rand::distributions::{Alphanumeric, DistString};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::fs::{self, File, ReadDir};
@@ -12,8 +14,6 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
-#[cfg(test)]
-use rand::distributions::{Alphanumeric, DistString};
 
 pub struct TagDatabase {
     pub name: String,
