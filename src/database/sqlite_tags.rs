@@ -7,6 +7,23 @@ use rusqlite::Connection;
 pub struct TagsDatabase;
 
 impl TagsDatabase {
+
+    pub fn create_tags_table(db: &Connection) -> Result<()> {
+        // Creates the `_tags` table.
+        //  `tag_name`: The tag name
+        //  `upload_count`: The amount of files with the `tag_name` tag
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS _tags (
+                id              INTEGER PRIMARY KEY,
+                tag_name        TEXT NOT NULL UNIQUE,
+                upload_count    INTEGER NOT NULL
+            )",
+            (),
+        )
+        .context("Couldn't create '_tags' table for database")?;
+
+        Ok(())
+    }
     /// Adds a tag in the `_tags` table. Used to retain some information about the tags
     /// themselves (for now, only the amount of files)
     /// If a tag is already present, nothing will change (and it will return Ok())

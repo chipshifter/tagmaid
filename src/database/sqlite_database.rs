@@ -1,6 +1,7 @@
 //! SqliteDatabase is the internal component that handles everything SQL related
 //! to the `sqlite.db` database.
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
+use crate::database::{sqlite_tags::TagsDatabase};
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use log::*;
@@ -94,18 +95,7 @@ impl SqliteDatabase {
         )
         .context("Couldn't create '_files' table for database")?;
 
-        // Creates the `_tags` table.
-        //  `tag_name`: The tag name
-        //  `upload_count`: The amount of files with the `tag_name` tag
-        db.execute(
-            "CREATE TABLE IF NOT EXISTS _tags (
-                id              INTEGER PRIMARY KEY,
-                tag_name        TEXT NOT NULL UNIQUE,
-                upload_count    INTEGER NOT NULL
-            )",
-            (),
-        )
-        .context("Couldn't create '_tags' table for database")?;
+        TagsDatabase::create_tags_table(&db)?;
 
         Ok(db)
     }
