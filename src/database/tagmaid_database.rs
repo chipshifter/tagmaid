@@ -3,15 +3,17 @@
 //! It is built on top of Arc<> and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{fs_database::FsDatabase, tags_database::TagsDatabase};
+use crate::database::{sqlite_database::SqliteDatabase, fs_database::FsDatabase, tags_database::TagsDatabase};
 use anyhow::{Context, Result};
 use log::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::path::PathBuf;
 
 pub struct TagMaidDatabase {
     pub filesystem_db: Arc<Mutex<FsDatabase>>,
+    sqlite_db: Arc<Mutex<SqliteDatabase>>,
     cache: Arc<TagMaidCache>,
 }
 
@@ -19,6 +21,7 @@ impl Clone for TagMaidDatabase {
     fn clone(&self) -> Self {
         return TagMaidDatabase {
             filesystem_db: Arc::clone(&self.filesystem_db),
+            sqlite_db: Arc::clone(&self.sqlite_db),
             cache: Arc::clone(&self.cache),
         };
     }
@@ -29,9 +32,11 @@ pub fn init() -> TagMaidDatabase {
     // TODO: Put db_name in Config
     let db_name = "frank";
     let filesystem_db: FsDatabase = FsDatabase::initialise(db_name.to_owned(), None).unwrap();
+    let sqlite_db = SqliteDatabase::initialise(&db_name, None).unwrap();
     info!("Initialising TagMaidDatabse of name {db_name}");
     return TagMaidDatabase {
         filesystem_db: Arc::new(Mutex::new(filesystem_db)),
+        sqlite_db: Arc::new(Mutex::new(sqlite_db)),
         cache: Arc::new(TagMaidCache::init()),
     };
 }
@@ -39,6 +44,10 @@ pub fn init() -> TagMaidDatabase {
 impl TagMaidDatabase {
     pub fn get_fs_db(&self) -> Arc<Mutex<FsDatabase>> {
         return self.filesystem_db.clone();
+    }
+
+    pub fn get_sql_db(&self) -> Arc<Mutex<SqliteDatabase>> {
+        return self.sqlite_db.clone();
     }
 
     pub fn get_cache(&self) -> Arc<TagMaidCache> {
@@ -61,9 +70,8 @@ impl TagMaidDatabase {
             Err(_err) => {}
         }
 
-        let fs_db_mutex = &self.get_fs_db();
-        let fs_db = fs_db_mutex.lock().unwrap();
-        let sql_db = &fs_db.sqlite_database;
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
 
         // Sqlite
         if sql_db.get_tagfile_from_hash(&tf.file_hash).is_err() {
@@ -72,7 +80,8 @@ impl TagMaidDatabase {
 
             // Filesystem
             // Uploads file if it doesn't exist
-            let uploaded_file = fs_db.upload_file(tf)?;
+            let fs_db_mutex = &self.get_fs_db();
+            let uploaded_file = fs_db_mutex.lock().unwrap().upload_file(tf)?;
 
             sql_db.add_file(&uploaded_file)?;
         } else {
@@ -122,9 +131,8 @@ impl TagMaidDatabase {
         }
 
         // It wasn't cached, so we perform a SQL search
-        let fs_db_mutex = &self.get_fs_db();
-        let fs_db = fs_db_mutex.lock().unwrap();
-        let sql_db = &fs_db.sqlite_database;
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
         let tagfile = sql_db.get_tagfile_from_hash(&hash)?;
 
         // This part is for caching the TagFile because it wasn't in the cache when
@@ -149,9 +157,8 @@ impl TagMaidDatabase {
     }
 
     pub fn get_tag_count(&self, tag: &str) -> Option<i64> {
-        let fs_db_mutex = &self.get_fs_db();
-        let fs_db = fs_db_mutex.lock().unwrap();
-        let sql_db = &fs_db.sqlite_database;
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
         return TagsDatabase::get_tag_count(sql_db.get_connection(), tag).ok();
     }
 
@@ -159,10 +166,36 @@ impl TagMaidDatabase {
         return TagInfo::initialise(tag, &self);
     }
 
+    pub fn get_hashes_from_tag(&self, tag: &str) -> Result<HashSet<Vec<u8>>> {
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+
+        let hashes = sql_db
+            .get_hashes_from_tag(&tag)
+            .with_context(|| format!("Database: Couldn't get hashes from tag {}", &tag))?;
+        Ok(hashes)
+    }
+
+    pub fn get_all_file_hashes(&self) -> Result<HashSet<Vec<u8>>> {
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+
+        let hashes = sql_db
+            .get_all_file_hashes()
+            .context("Database: Couldn't get all file hashes")?;
+        Ok(hashes)
+    }
+
     #[cfg(test)]
     pub fn create_random_tagmaiddatabase() -> TagMaidDatabase {
+        let random_fs_db = FsDatabase::create_random_fsdatabase();
+        let random_fs_db_name = random_fs_db.name.clone();
+        let mut random_fs_db_path = random_fs_db.path.clone();
+        random_fs_db_path.pop();
+        random_fs_db_path.pop();
         return TagMaidDatabase {
-            filesystem_db: Arc::new(Mutex::new(FsDatabase::create_random_fsdatabase())),
+            filesystem_db: Arc::new(Mutex::new(random_fs_db)),
+            sqlite_db: Arc::new(Mutex::new(SqliteDatabase::initialise(&random_fs_db_name, Some(random_fs_db_path)).unwrap())),
             cache: Arc::new(TagMaidCache::init()),
         };
     }
@@ -171,6 +204,34 @@ impl TagMaidDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn should_tagmaiddatabase_structure_be_correct() {
+        let db = TagMaidDatabase::create_random_tagmaiddatabase();
+        // (sigh)
+        let fs_db = Arc::try_unwrap(db.filesystem_db).unwrap().into_inner().unwrap();
+
+        // The database when initialised creates the following things in the parent folder:
+        //  - sqlite.db for the SQLite database
+        //  - A "files" folder that contains all the uploaded files
+
+        // db.contents is a ReadDir reading from the database path.
+        // We turn that into a vector of PathBufs to compare with what is expected
+        let path_iter: Vec<PathBuf> = fs_db.contents.map(|f| f.unwrap().path()).collect();
+
+        // "files"
+        let mut files_path = fs_db.path.clone();
+        files_path.push("files");
+
+        // "sqlite.db"
+        let mut sqlite_db_file_path = fs_db.path.clone();
+        sqlite_db_file_path.push("sqlite.db");
+
+        // Check if files in db.contents
+        assert_eq!(path_iter, vec![files_path, sqlite_db_file_path]);
+    }
+
 
     #[test]
     fn should_tagfile_upload_and_retrieve() {

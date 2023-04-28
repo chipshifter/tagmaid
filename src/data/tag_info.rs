@@ -12,9 +12,8 @@ pub struct TagInfo {
 impl TagInfo {
     pub fn initialise(tag: String, db: &TagMaidDatabase) -> TagInfo {
         // TODO: Move tag db stuff to another separate thing
-        let fs_db_mutex = db.get_fs_db();
-        let fs_db = fs_db_mutex.lock().unwrap();
-        let sql_db = &fs_db.sqlite_database;
+        let sql_db_mutex = db.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
 
         match db.get_cache().get_tag_info(&tag) {
             Some(tag_info) => tag_info,

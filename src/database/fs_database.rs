@@ -15,11 +15,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
+#[derive(Debug)]
 pub struct FsDatabase {
     pub name: String,
     pub path: PathBuf,
     pub contents: ReadDir,
-    pub sqlite_database: SqliteDatabase,
 }
 
 pub fn get_database_path(custom_parent_path: Option<PathBuf>) -> Result<PathBuf> {
@@ -93,14 +93,11 @@ impl FsDatabase {
             ))?;
         }
 
-        let sqlite_databases = SqliteDatabase::initialise(&name, custom_path)?;
-
         let db_folder = fs::read_dir(&path)?;
         Ok(FsDatabase {
             name: name,
             path: path,
             contents: db_folder,
-            sqlite_database: sqlite_databases,
         })
     }
 
@@ -143,53 +140,6 @@ impl FsDatabase {
         Ok(new_tagfile)
     }
 
-    pub fn remove_file(&self, file: &TagFile) -> Result<()> {
-        info!("FsDatabase - remove_file() - file: {}", &file.display());
-        fs::remove_file(&file.get_path()).with_context(|| {
-            format!(
-                "Database: Couldn't remove file '{}' from filesystem",
-                &file.path.display()
-            )
-        })?;
-        let db: &SqliteDatabase = &self.sqlite_database;
-        db.remove_file(file).with_context(|| {
-            format!(
-                "Database: Couldn't remove file '{}' from Sqlite database",
-                &file.path.display()
-            )
-        })?;
-
-        Ok(())
-    }
-
-    pub fn get_tagfile_from_hash(&self, hash: &Vec<u8>) -> Result<TagFile> {
-        debug!("FsDatabase - get_tagfile_from_hash() - hash: {:?}", &hash);
-        Ok(self
-            .sqlite_database
-            .get_tagfile_from_hash(hash)
-            .with_context(|| {
-                format!("Database: Couldn't get TagFile from file hash {:?}", &hash)
-            })?)
-    }
-
-    pub fn get_hashes_from_tag(&self, tag: &str) -> Result<HashSet<Vec<u8>>> {
-        info!("FsDatabase - get_hashes_from_tag() - tag: {}", &tag);
-        let db: &SqliteDatabase = &self.sqlite_database;
-        let hashes = db
-            .get_hashes_from_tag(&tag)
-            .with_context(|| format!("Database: Couldn't get hashes from tag {}", &tag))?;
-        Ok(hashes)
-    }
-
-    pub fn get_all_file_hashes(&self) -> Result<HashSet<Vec<u8>>> {
-        info!("FsDatabase - get_all_file_hashes()");
-        let db: &SqliteDatabase = &self.sqlite_database;
-        let hashes = db
-            .get_all_file_hashes()
-            .context("Database: Couldn't get all file hashes")?;
-        Ok(hashes)
-    }
-
     #[cfg(test)]
     pub fn create_random_fsdatabase() -> FsDatabase {
         let tmp_dir = tempfile::tempdir().unwrap();
@@ -217,20 +167,6 @@ mod tests {
         assert_eq!(tagfile.file_hash, uploaded_tagfile.file_hash);
         assert_eq!(tagfile.tags, uploaded_tagfile.tags);
         assert!(uploaded_tagfile.get_path().is_file() && uploaded_tagfile.get_path().exists());
-    }
-
-    #[test]
-    fn should_tagfile_remove_in_fs() {
-        let tagfile = TagFile::create_random_tagfile();
-        let db = FsDatabase::create_random_fsdatabase();
-        let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
-        let tagfile_path = uploaded_tagfile.get_path();
-
-        assert!(tagfile_path.is_file() && tagfile_path.exists());
-        db.remove_file(&uploaded_tagfile).unwrap();
-        assert!(!tagfile_path.is_file());
-        assert!(!tagfile_path.exists());
-        assert!(!tagfile_path.is_file() && !tagfile_path.exists());
     }
 
     #[test]
@@ -276,30 +212,6 @@ mod tests {
 
         // now the path should have been completely deleted
         assert!(!Path::new(&db_path).exists());
-    }
-
-    #[test]
-    fn should_db_structure_be_correct() {
-        let db = FsDatabase::create_random_fsdatabase();
-
-        // The database when initialised creates the following things in the parent folder:
-        //  - sqlite.db for the SQLite database
-        //  - A "files" folder that contains all the uploaded files
-
-        // db.contents is a ReadDir reading from the database path.
-        // We turn that into a vector of PathBufs to compare with what is expected
-        let path_iter: Vec<PathBuf> = db.contents.map(|f| f.unwrap().path()).collect();
-
-        // "files"
-        let mut files_path = db.path.clone();
-        files_path.push("files");
-
-        // "sqlite.db"
-        let mut sqlite_db_file_path = db.path.clone();
-        sqlite_db_file_path.push("sqlite.db");
-
-        // Check if files in db.contents
-        assert_eq!(path_iter, vec![files_path, sqlite_db_file_path]);
     }
 
     /// We upload a bunch of random files and see if they're here
