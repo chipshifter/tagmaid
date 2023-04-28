@@ -1,6 +1,7 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
 use anyhow::{bail, Context, Result};
+use std::collections::BTreeMap;
 use log::*;
 use rusqlite::Connection;
 
@@ -23,7 +24,7 @@ impl TagsDatabase {
 
         Ok(())
     }
-    
+
     /// Adds a tag in the `_tags` table. Used to retain some information about the tags
     /// themselves (for now, only the amount of files)
     /// If a tag is already present, nothing will change (and it will return Ok())
@@ -110,6 +111,26 @@ impl TagsDatabase {
         // Update the tag upload count with what we just calculated
         let _ = Self::set_tag_count(db, tag, count)?;
         Ok(())
+    }
+
+    /// Searches in _tags for tags that start with the given string.
+    /// For instance: you have the tags brie, brioche, branch in your database
+    /// stored somewhere in tags. Then, `get_tags_starting_with(&db, "bri")` will return
+    /// a BTreeMap of the `brie` and `brioche` tags because they started with `bri`, with their
+    /// upload count as well.
+    pub fn get_tags_starting_with(db: &Connection, string: &str) -> Result<BTreeMap<i64, String>> {
+        let mut quer = db.prepare(
+            format!("SELECT tag_name, upload_count FROM _tags WHERE tag_name LIKE \"{string}%\"").as_str(),
+        )?;
+        let search_result = quer.query_map([], |row| Ok(TagInfo {tag: row.get(0)?, upload_count: row.get(1)?}))?;
+        let mut tag_infos: BTreeMap<i64, String> = BTreeMap::new();
+        for result in search_result {
+            let tag_info = result?;
+            let upload_count = tag_info.get_upload_count();
+            let tag = tag_info.get_tag();
+            tag_infos.insert(upload_count, tag);
+        }
+        Ok(tag_infos)
     }
 }
 
@@ -224,5 +245,32 @@ mod tests {
         // (for the `n` files we added)
         assert!(TagsDatabase::sync_tag_count(db, "test").is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(n_files));
+    }
+
+    #[test]
+    fn should_tag_search_and_filter() {
+        let sql_db = SqliteDatabase::get_random_db_connection();
+        let db = sql_db.get_connection();
+
+        assert!(TagsDatabase::add_tag(db, "brie").is_ok());
+        assert!(TagsDatabase::set_tag_count(db, "brie", 12).is_ok());
+
+        assert!(TagsDatabase::add_tag(db, "brioche").is_ok());
+        assert!(TagsDatabase::set_tag_count(db, "brioche", 34).is_ok());
+
+        assert!(TagsDatabase::add_tag(db, "branch").is_ok());
+        assert!(TagsDatabase::set_tag_count(db, "branch", 56).is_ok());
+
+        let search_result_map = TagsDatabase::get_tags_starting_with(&db, "bri").unwrap();
+
+        // The result should only have "brie" (with upload_count 12) and "brioche", NOT "branch"
+        let upload_count_keys: Vec<_> = search_result_map.keys().cloned().collect();
+        assert_eq!(upload_count_keys, [12, 34]);
+
+        let upload_count_values: Vec<_> = search_result_map.values().cloned().collect();
+        assert_eq!(upload_count_values, ["brie", "brioche"]);
+
+        // No "branch"
+        assert!(!search_result_map.contains_key(&56));
     }
 }
