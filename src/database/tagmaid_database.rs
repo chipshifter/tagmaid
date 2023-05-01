@@ -145,9 +145,10 @@ impl TagMaidDatabase {
             Err(_err) => {}
         }
 
-        info!("Updating {tf}: Updating tags to SQL");
+        info!("Updating {tf}: Updating tags at FilesDatabase");
         FilesDatabase::update_tags_to_file(sql_db.get_connection(), tf)?;
-
+        info!("Updating {tf}: Updating tags at TagsDatabase");
+        TagsDatabase::add_tags(sql_db.get_connection(), tf.get_tags())?;
         Ok(())
     }
 

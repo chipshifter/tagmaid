@@ -149,6 +149,22 @@ impl FilesDatabase {
         Ok(())
     }
 
+    /// When a file is removed, we have to update every tag table to remove the file hash
+    /// from them. This is what the function does
+    pub fn remove_file_tags_from_tags_table(db: &Connection, file: &TagFile) -> Result<()> {
+        for tag in file.get_tags() {
+            let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
+            db.execute(query.as_str(), [&file.file_hash])
+            .with_context(|| {
+                format!(
+                    "Couldn't remove file with file hash '{:?}' from tag table {tag}",
+                    &file.file_hash
+                )
+            })?;
+        }
+        Ok(())
+    }
+
     /// Internal function for handling file search in the `_files` table.
     fn get_file_from_hash(db: &Connection, hash: &Vec<u8>) -> Result<TagFileSqlite> {
         let mut quer = db.prepare(
@@ -230,6 +246,11 @@ impl FilesDatabase {
     /// 2) It *updates* (does not add) the `_files` entry which also has an entry
     /// for tags in each individual file.
     pub fn update_tags_to_file(db: &Connection, file: &TagFile) -> Result<()> {
+        // Remove old tags
+        // Don't propagate error--because if the tags were already deleted this would Err()
+        Self::remove_file_tags_from_tags_table(db, file).ok();
+
+        // Add tags
         for tag in &file.tags {
             info!(
                 "SqliteDatabse - update_tags_to_file() - Creating tag table for {} if not exists",

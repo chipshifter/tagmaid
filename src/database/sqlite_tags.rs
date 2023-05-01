@@ -1,7 +1,7 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
 use anyhow::{bail, Context, Result};
-use std::collections::BTreeMap;
+use std::collections::{HashSet, BTreeMap};
 use log::*;
 use rusqlite::Connection;
 
@@ -35,6 +35,14 @@ impl TagsDatabase {
         )
         .context("Couldn't add tag {tag} in _tags table")?;
 
+        Self::increase_tag_count_by_one(db, tag)?;
+        Ok(())
+    }
+
+    pub fn add_tags(db: &Connection, tags: &HashSet<String>) -> Result<()> {
+        for tag in tags {
+            Self::add_tag(db, &tag)?;
+        }
         Ok(())
     }
 
@@ -165,7 +173,7 @@ mod tests {
 
         // We finally add the tag
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
     }
 
     #[test]
@@ -174,7 +182,7 @@ mod tests {
         let db = sql_db.get_connection();
 
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
 
         assert!(TagsDatabase::remove_tag(db, "test").is_ok());
         assert!(TagsDatabase::get_tag_count(db, "test").is_err());
@@ -186,10 +194,10 @@ mod tests {
         let db = sql_db.get_connection();
 
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
 
         assert!(TagsDatabase::increase_tag_count_by_one(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(2));
     }
 
     #[test]
@@ -198,7 +206,7 @@ mod tests {
         let db = sql_db.get_connection();
 
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
 
         assert!(TagsDatabase::set_tag_count(db, "test", 69).is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(69));
@@ -210,7 +218,7 @@ mod tests {
         let db = sql_db.get_connection();
 
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(1));
 
         assert!(TagsDatabase::set_tag_count(db, "test", 69).is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(69));
@@ -218,7 +226,7 @@ mod tests {
         // Even though we re-add a tag that was already added, the count should
         // not reset to 0
         assert!(TagsDatabase::add_tag(db, "test").is_ok());
-        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(69));
+        assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(70));
     }
 
     #[test]
@@ -234,7 +242,8 @@ mod tests {
         assert!(TagsDatabase::set_tag_count(db, "test", 69).is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(69));
 
-        // Since the db is new, it should sync back to 0
+        // Since the db is new (there is actually no file in the db)
+        // it should sync back to 0
         assert!(TagsDatabase::sync_tag_count(db, "test").is_ok());
         assert_eq!(TagsDatabase::get_tag_count(db, "test").ok(), Some(0));
 
