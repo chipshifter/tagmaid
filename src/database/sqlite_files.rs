@@ -132,19 +132,7 @@ impl FilesDatabase {
             None => {}
         }
 
-        for tag in tags_from_hash_result {
-            if (Self::get_hashes_from_tag(db, &tag)?).contains(&file.file_hash) {
-                // Remove 2)
-                let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
-                db.execute(query.as_str(), [&file.file_hash])
-                    .with_context(|| {
-                        format!(
-                            "Couldn't remove file with file hash '{:?}' from tag table {tag}",
-                            &file.file_hash
-                        )
-                    })?;
-            }
-        }
+        Self::remove_file_tags_from_tags_table(db, file)?;
 
         Ok(())
     }
@@ -153,14 +141,16 @@ impl FilesDatabase {
     /// from them. This is what the function does
     pub fn remove_file_tags_from_tags_table(db: &Connection, file: &TagFile) -> Result<()> {
         for tag in file.get_tags() {
-            let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
-            db.execute(query.as_str(), [&file.file_hash])
-            .with_context(|| {
-                format!(
-                    "Couldn't remove file with file hash '{:?}' from tag table {tag}",
-                    &file.file_hash
-                )
-            })?;
+            if (Self::get_hashes_from_tag(db, &tag)?).contains(&file.file_hash) {
+                let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
+                db.execute(query.as_str(), [&file.file_hash])
+                .with_context(|| {
+                    format!(
+                        "Couldn't remove file with file hash '{:?}' from tag table {tag}",
+                        &file.file_hash
+                    )
+                })?;
+            }
         }
         Ok(())
     }

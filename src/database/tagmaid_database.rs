@@ -152,6 +152,17 @@ impl TagMaidDatabase {
         Ok(())
     }
 
+    pub fn remove_tagfile(&self, file: &TagFile) -> Result<()> {
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+        let sql_db_connection = sql_db.get_connection();
+        for tag in file.get_tags() {
+            TagsDatabase::decrease_tag_count_by_one(sql_db_connection, tag)?;
+        }
+        FilesDatabase::remove_file(sql_db_connection, file)?;
+        Ok(())
+    }
+
     pub fn get_tagfile_from_hash(&self, hash: &Vec<u8>) -> Result<TagFile> {
         debug!(
             "Getting TagFile from file hash {} (trimmed)",
@@ -284,5 +295,37 @@ mod tests {
 
         // We check if it found the right TagFile
         assert_eq!(db.get_tagfile_from_hash(&tf_hash).ok(), Some(tf));
+    }
+
+    #[test]
+    fn should_tag_counts_update() {
+        let db = TagMaidDatabase::create_random_tagmaiddatabase();
+
+        let mut tf_1 = TagFile::create_random_tagfile();
+        let _ = tf_1.add_tag("test_tag");
+        let _ = tf_1.add_tag("another_tag");
+        assert!(db.update_tagfile(&tf_1).is_ok());
+
+        let mut tf_2 = TagFile::create_random_tagfile();
+        let _ = tf_2.add_tag("test_tag");
+        assert!(db.update_tagfile(&tf_2).is_ok());
+
+        assert_eq!(db.get_tag_count("test_tag"), Some(2));
+        assert_eq!(db.get_tag_count("another_tag"), Some(1));
+
+        assert!(db.remove_tagfile(&tf_1).is_ok());
+
+        assert_eq!(db.get_tag_count("test_tag"), Some(1));
+        assert_eq!(db.get_tag_count("another_tag"), None);
+
+        assert!(db.update_tagfile(&tf_1).is_ok());
+
+        assert_eq!(db.get_tag_count("test_tag"), Some(2));
+        assert_eq!(db.get_tag_count("another_tag"), Some(1));
+
+        assert!(db.remove_tagfile(&tf_2).is_ok());
+
+        assert_eq!(db.get_tag_count("test_tag"), Some(1));
+        assert_eq!(db.get_tag_count("another_tag"), Some(1));
     }
 }

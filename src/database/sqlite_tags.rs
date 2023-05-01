@@ -101,6 +101,20 @@ impl TagsDatabase {
         Ok(())
     }
 
+    /// Increases `upload_count` by one on a given `tag` in the `_tags` table. Used
+    /// when deleting a file/removing a tag from a file. If count is at 0, we delete
+    /// the table
+    pub fn decrease_tag_count_by_one(db: &Connection, tag: &str) -> Result<()> {
+        let mut tag_count: i64 = Self::get_tag_count(db, tag)?;
+        tag_count -= 1;
+        if tag_count < 1 {
+            Self::remove_tag(db, tag)?;
+        } else {
+            Self::set_tag_count(db, tag, tag_count)?;
+        }
+        Ok(())
+    }
+
     /// Synchronises the tag upload count with how many rows there
     /// are in a tag table (= number of files with the tag in db)
     /// It is a rather expensive call (it iterates though every row
