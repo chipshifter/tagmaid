@@ -111,7 +111,8 @@ pub struct TagMaid {
     add_path: Option<PathBuf>,
     path_future: Option<std::thread::JoinHandle<Option<PathBuf>>>,
     // View
-    viewmode_tagfile_hash: Option<Vec<u8>>,
+    viewmode_tagfile_hashes: Vec<(Vec<u8>, String)>,
+    view_index: Option<usize>,
     // Edit
     edit_hash: Option<Vec<u8>>,
     edit_tags: BTreeSet<String>,
@@ -135,7 +136,8 @@ impl TagMaid {
             add_path: None,
             path_future: None,
             conf: conf,
-            viewmode_tagfile_hash: None,
+            viewmode_tagfile_hashes: Vec::new(),
+            view_index: None,
             edit_hash: None,
             edit_tags: BTreeSet::new(),
             edit_add_tags: String::new(),
@@ -533,13 +535,19 @@ impl TagMaid {
     fn ui_view(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             self.ui_logo(ctx, ui);
-            ui.label(egui::RichText::new("View").font(egui::FontId::monospace(40.0)));
+            ui.label(egui::RichText::new("View ").font(egui::FontId::monospace(40.0)));
+            match self.viewmode_tagfile_hashes.get(self.view_index.unwrap_or(0)) {
+                Some((_, name)) => {
+                    ui.label(name);
+                }
+                _ => {}
+            }
             ui.add_space(15.0);
         });
         ui.add(egui::Separator::default().horizontal());
         ui.add_space(5.0);
-        match &self.viewmode_tagfile_hash {
-            Some(hash) => {
+        match self.viewmode_tagfile_hashes.get(self.view_index.unwrap_or(0)) {
+            Some((hash, _)) => {
                 let tagfile = self.db.get_tagfile_from_hash(&hash).unwrap();
                 let image_path = tagfile.get_path().to_owned();
                 let image_texture =
@@ -757,7 +765,7 @@ impl TagMaid {
                 None => TextureLabel::UiImages("file".to_owned()),
             },
         );
-        let tagfile_name = &tagfile.get_file_name().to_owned();
+        let tagfile_name = tagfile.get_file_name();
         ui.centered_and_justified(|ui| {
             let image = ui.image(image_texture.id(), image_texture.size_vec2());
             let response = &image.interact(egui::Sense::click());
@@ -766,7 +774,8 @@ impl TagMaid {
                 // - Update selected hash used in View page
                 // - Send user to view page
                 // (In the future maybe, add browsing history by logging these clicks/hashes)
-                self.viewmode_tagfile_hash = Some(tagfile.file_hash.to_vec());
+                self.viewmode_tagfile_hashes.push((tagfile.file_hash.to_vec(), tagfile_name.to_owned()));
+                self.view_index.replace(self.viewmode_tagfile_hashes.len()-1);
                 self.mode = ViewPage::View;
             }
         });
@@ -782,7 +791,7 @@ impl TagMaid {
         // Since we deal with LayoutJob we have to use even more fucked up code
         // to make our string pretty and have a font
         job.append(
-            tagfile_name,
+            &tagfile_name,
             0.0,
             TextFormat {
                 font_id: FontId::new(12.0, FontFamily::Monospace),
@@ -916,7 +925,41 @@ impl eframe::App for TagMaid {
                 if ui.button("Debug").clicked() {
                     self.mode = ViewPage::Debug;
                 }
-            })
+                ui.separator();
+                let mut rm = Vec::new();
+                for (ind, (_, name)) in self.viewmode_tagfile_hashes.iter().enumerate() {
+                    // Some truly fucked up obscure code to clip text and add "..."
+                    // if the file name is too big and exceeds the width of the little box
+                    let mut job = LayoutJob::single_section(String::new(), TextFormat::default());
+                    job.wrap = TextWrapping {
+                        max_rows: 1,
+                        break_anywhere: true,
+                        overflow_character: Some('…'),
+                        ..Default::default()
+                    };
+                    // Since we deal with LayoutJob we have to use even more fucked up code
+                    // to make our string pretty and have a font
+                    job.append(
+                        name,
+                        0.0,
+                        TextFormat {
+                            font_id: FontId::new(12.0, FontFamily::Proportional),
+                            ..Default::default()
+                        },
+                    );
+                    if ui.button(job).clicked() {
+                        self.view_index.replace(ind);
+                        self.mode = ViewPage::View;
+                    }
+                    if ui.button("x").clicked() {
+                        rm.push(ind);
+                    }
+                }
+                for ind in rm.into_iter().rev() {
+                    self.viewmode_tagfile_hashes.remove(ind);
+                    self.view_index = None;
+                }
+            });
         });
         egui::CentralPanel::default().show(ctx, |ui| match self.mode {
             ViewPage::View => {
