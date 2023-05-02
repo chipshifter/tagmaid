@@ -111,43 +111,43 @@ impl FilesDatabase {
         // Therefore it is called before removing 1), because get_tags_from_hash()
         // looks in that database (that we're about to delete)
 
-        let mut tags_from_hash_result: HashSet<String> = HashSet::new();
+        let mut tags_to_remove: HashSet<String> = file.get_tags().clone();
 
         match Self::get_tagfile_from_hash(db, &file.file_hash).ok() {
             Some(tagfile) => {
-                tags_from_hash_result = tagfile.get_tags().to_owned();
+                tags_to_remove = tagfile.get_tags().to_owned();
 
                 // Remove 1)
                 db.execute(
                     "DELETE FROM _files WHERE file_hash IS (?)",
-                    [&file.file_hash],
+                    [&tagfile.file_hash],
                 )
                 .with_context(|| {
                     format!(
                         "Couldn't remove file with file hash '{:?}' from _files table",
-                        &file.file_hash
+                        &tagfile.file_hash
                     )
                 })?;
             }
             None => {}
         }
         
-        Self::remove_file_tags_from_tags_table(db, file)?;
+        Self::remove_hash_from_tags(db, &file.file_hash, &tags_to_remove)?;
 
         Ok(())
     }
 
     /// When a file is removed, we have to update every tag table to remove the file hash
     /// from them. This is what the function does
-    pub fn remove_file_tags_from_tags_table(db: &Connection, file: &TagFile) -> Result<()> {
-        for tag in file.get_tags() {
-            if (Self::get_hashes_from_tag(db, &tag)?).contains(&file.file_hash) {
+    pub fn remove_hash_from_tags(db: &Connection, hash: &Vec<u8>, tags: &HashSet<String>) -> Result<()> {
+        for tag in tags {
+            if (Self::get_hashes_from_tag(db, &tag)?).contains(hash) {
                 let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
-                db.execute(query.as_str(), [&file.file_hash])
+                db.execute(query.as_str(), [&hash])
                 .with_context(|| {
                     format!(
                         "Couldn't remove file with file hash '{:?}' from tag table {tag}",
-                        &file.file_hash
+                        &hash
                     )
                 })?;
             }
@@ -238,7 +238,7 @@ impl FilesDatabase {
     pub fn update_tags_to_file(db: &Connection, file: &TagFile) -> Result<()> {
         // Remove old tags
         // Don't propagate error--because if the tags were already deleted this would Err()
-        Self::remove_file_tags_from_tags_table(db, file).ok();
+        Self::remove_hash_from_tags(db, &file.file_hash, &file.get_tags()).ok();
 
         // Add tags
         for tag in &file.tags {
