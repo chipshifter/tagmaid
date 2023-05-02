@@ -3,7 +3,7 @@ pub mod data;
 pub mod database;
 pub mod ui;
 use crate::data::{config::Config, tag_file::TagFile};
-use crate::database::{fs_database::FsDatabase, tagmaid_database::TagMaidDatabase};
+use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use anyhow::{bail, Context, Result};
 use image::EncodableLayout;
 #[macro_use]

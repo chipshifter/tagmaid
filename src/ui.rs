@@ -22,7 +22,7 @@ use crate::data::{
 };
 
 use crate::database::{
-    fs_database::FsDatabase, sqlite_database::SqliteDatabase, tagmaid_database::TagMaidDatabase,
+    filesystem::FsDatabase, sqlite_database::SqliteDatabase, tagmaid_database::TagMaidDatabase,
 };
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]

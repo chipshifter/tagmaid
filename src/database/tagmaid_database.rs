@@ -4,7 +4,7 @@
 //! It is initialised once in main(), so a full restart would be required to change it.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{
-    fs_database::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
+    filesystem::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
     sqlite_taginfo::TagInfoDatabase, sqlite_tags::TagsDatabase,
 };
 use anyhow::{Context, Result};

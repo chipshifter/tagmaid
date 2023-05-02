@@ -5,7 +5,6 @@ use crate::data::cache::TagMaidCache;
 use crate::database::{
     sqlite_taginfo::TagInfoDatabase, sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase,
 };
-use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, PartialEq)]

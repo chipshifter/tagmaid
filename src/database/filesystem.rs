@@ -1,5 +1,5 @@
-//! FsDatabase is the old database interface. It is in the process of being repurposed as the
-//! "filesystem" interface, used for hardlinking files to the database path etc.
+//! FsDatabase is the interface for managing file-system related operations on the database
+//! (copy/upload a file in the database mainly).
 use crate::data::tag_file::TagFile;
 use crate::database::sqlite_database::SqliteDatabase;
 use anyhow::{bail, Context, Result};
