@@ -131,7 +131,7 @@ impl FilesDatabase {
             }
             None => {}
         }
-
+        
         Self::remove_file_tags_from_tags_table(db, file)?;
 
         Ok(())

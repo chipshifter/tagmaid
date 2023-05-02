@@ -1,5 +1,5 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
-use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
+use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase};
 use anyhow::{bail, Context, Result};
 use std::collections::{HashSet, BTreeMap};
 use log::*;
@@ -14,8 +14,7 @@ impl TagsDatabase {
         //  `upload_count`: The amount of files with the `tag_name` tag
         db.execute(
             "CREATE TABLE IF NOT EXISTS _tags (
-                id              INTEGER PRIMARY KEY,
-                tag_name        TEXT NOT NULL UNIQUE,
+                tag_name        TEXT NOT NULL PRIMARY KEY,
                 upload_count    INTEGER NOT NULL
             )",
             (),
@@ -54,29 +53,12 @@ impl TagsDatabase {
         Ok(())
     }
 
-    /// TagInfo, we will use this for futureproof reasons
-    pub fn get_tag_info(db: &Connection, tag: &str) -> Result<TagInfo> {
-        return Ok(db.query_row(
-            "SELECT upload_count FROM _tags WHERE tag_name IS :tag",
-            &[(":tag", tag)],
-            |row| {
-                Ok(TagInfo {
-                    tag: tag.to_owned(),
-                    upload_count: row.get(0).unwrap_or(0),
-                })
-            },
-        )?);
-    }
-
     /// Retrieves the stored `upload_count` in `_tags` table. Note that it *could be* desynced
     /// with the actual amount of files that have `tag`. `upload_tag_count()` helps against this
     /// issue.
+    // TODO?: Remove this?
     pub fn get_tag_count(db: &Connection, tag: &str) -> Result<i64> {
-        return Ok(db.query_row(
-            "SELECT upload_count FROM _tags WHERE tag_name IS :tag",
-            &[(":tag", tag)],
-            |row| row.get(0),
-        )?);
+        Ok(TagInfoDatabase::get_tag_info_from_tag(db, tag)?.upload_count)
     }
 
     /// Sets `upload_count` attribute to `tag_count` on a given `tag` in the `_tags` table.

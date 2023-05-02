@@ -5,7 +5,7 @@
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{
     fs_database::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
-    sqlite_tags::TagsDatabase,
+    sqlite_tags::TagsDatabase, sqlite_taginfo::TagInfoDatabase
 };
 use anyhow::{Context, Result};
 use log::*;
@@ -206,14 +206,39 @@ impl TagMaidDatabase {
         return Ok(tags.to_owned());
     }
 
+    // TagInfo
+
+    pub fn update_tag_info(&self, tag_info: &TagInfo) -> Result<()> {
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+
+        TagInfoDatabase::update_tag_info(sql_db.get_connection(), tag_info)?;
+        Ok(())
+    }
+
+    pub fn get_tag_info(&self, tag: String) -> Option<TagInfo> {
+        let sql_db_mutex = &self.get_sql_db();
+        let sql_db = sql_db_mutex.lock().unwrap();
+    
+        match self.get_cache().get_tag_info(&tag) {
+            Some(tag_info) => Some(tag_info),
+            None => {
+                let tag_info =
+                    TagInfoDatabase::get_tag_info_from_tag(sql_db.get_connection(), &tag).ok();
+
+                if tag_info.is_some() {
+                    self.get_cache().cache_tag_info(tag_info.clone().unwrap()).ok();
+                }
+
+                return tag_info;
+            }
+        }
+    }
+
     pub fn get_tag_count(&self, tag: &str) -> Option<i64> {
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
         return TagsDatabase::get_tag_count(sql_db.get_connection(), tag).ok();
-    }
-
-    pub fn get_tag_info(&self, tag: String) -> TagInfo {
-        return TagInfo::initialise(tag, &self);
     }
 
     pub fn get_hashes_from_tag(&self, tag: &str) -> Result<HashSet<Vec<u8>>> {
@@ -327,5 +352,28 @@ mod tests {
 
         assert_eq!(db.get_tag_count("test_tag"), Some(1));
         assert_eq!(db.get_tag_count("another_tag"), Some(1));
+    }
+
+    #[test]
+    fn should_get_tag_info() {
+        let db = TagMaidDatabase::create_random_tagmaiddatabase();
+
+        let mut tf = TagFile::create_random_tagfile();
+        let _ = tf.add_tag("test_tag");
+        let _ = tf.add_tag("another_tag");
+
+        assert!(db.update_tagfile(&tf).is_ok());
+
+        assert_eq!(db.get_tag_info("test_tag".to_string()), Some(TagInfo {
+            tag: "test_tag".to_string(),
+            upload_count: 1
+        }));
+
+        assert_eq!(db.get_tag_info("another_tag".to_string()), Some(TagInfo {
+            tag: "another_tag".to_string(),
+            upload_count: 1
+        }));
+
+        assert_eq!(db.get_tag_info("non_existant_tag".to_string()), None);
     }
 }

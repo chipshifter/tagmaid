@@ -1,5 +1,5 @@
 use crate::data::cache::TagMaidCache;
-use crate::database::{sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase};
+use crate::database::{sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase, sqlite_taginfo::TagInfoDatabase};
 use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
@@ -10,24 +10,10 @@ pub struct TagInfo {
 }
 
 impl TagInfo {
-    pub fn initialise(tag: String, db: &TagMaidDatabase) -> TagInfo {
-        // TODO: Move tag db stuff to another separate thing
-        let sql_db_mutex = db.get_sql_db();
-        let sql_db = sql_db_mutex.lock().unwrap();
-
-        match db.get_cache().get_tag_info(&tag) {
-            Some(tag_info) => tag_info,
-            None => {
-                let tag_info =
-                    TagsDatabase::get_tag_info(sql_db.get_connection(), &tag).unwrap_or(TagInfo {
-                        tag: tag,
-                        upload_count: 0,
-                    });
-
-                db.get_cache().cache_tag_info(tag_info.clone()).ok();
-
-                return tag_info;
-            }
+    pub fn new(tag: String) -> TagInfo {
+        TagInfo {
+            tag: tag,
+            upload_count: 0
         }
     }
 
@@ -45,7 +31,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_get_taginfo_attributes() {
+    fn should_get_tag_info_attributes() {
         let tag_info = TagInfo {
             tag: "test".to_string(),
             upload_count: 1337,
@@ -56,14 +42,12 @@ mod tests {
     }
 
     #[test]
-    fn should_taginfo_initialise() {
-        let db = TagMaidDatabase::create_random_tagmaiddatabase();
-
+    fn should_tag_info_initialise() {
         let tag_info = TagInfo {
             tag: "test".to_string(),
             upload_count: 0,
         };
 
-        assert_eq!(TagInfo::initialise("test".to_string(), &db), tag_info);
+        assert_eq!(TagInfo::new("test".to_string()), tag_info);
     }
 }
