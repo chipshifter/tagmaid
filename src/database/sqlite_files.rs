@@ -131,7 +131,7 @@ impl FilesDatabase {
             }
             None => {}
         }
-        
+
         Self::remove_hash_from_tags(db, &file.file_hash, &tags_to_remove)?;
 
         Ok(())
@@ -139,12 +139,15 @@ impl FilesDatabase {
 
     /// When a file is removed, we have to update every tag table to remove the file hash
     /// from them. This is what the function does
-    pub fn remove_hash_from_tags(db: &Connection, hash: &Vec<u8>, tags: &HashSet<String>) -> Result<()> {
+    pub fn remove_hash_from_tags(
+        db: &Connection,
+        hash: &Vec<u8>,
+        tags: &HashSet<String>,
+    ) -> Result<()> {
         for tag in tags {
             if (Self::get_hashes_from_tag(db, &tag)?).contains(hash) {
                 let query = format!("DELETE FROM {tag} WHERE file_hash IS (?)");
-                db.execute(query.as_str(), [&hash])
-                .with_context(|| {
+                db.execute(query.as_str(), [&hash]).with_context(|| {
                     format!(
                         "Couldn't remove file with file hash '{:?}' from tag table {tag}",
                         &hash

@@ -2,7 +2,9 @@
 //! Currently the only proprety stored is the upload count, i.e. the amount
 //! of files in the database which contain the tag.
 use crate::data::cache::TagMaidCache;
-use crate::database::{sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase, sqlite_taginfo::TagInfoDatabase};
+use crate::database::{
+    sqlite_taginfo::TagInfoDatabase, sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase,
+};
 use crate::FsDatabase;
 use std::sync::{Arc, Mutex};
 
@@ -16,7 +18,7 @@ impl TagInfo {
     pub fn new(tag: String) -> TagInfo {
         TagInfo {
             tag: tag,
-            upload_count: 0
+            upload_count: 0,
         }
     }
 

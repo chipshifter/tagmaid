@@ -1,12 +1,11 @@
 /// High-level database interface for TagInfo
 /// Uses _tags (sqlite_tags.rs)
-
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
 use anyhow::{bail, Context, Result};
-use std::collections::{HashSet, BTreeMap};
 use log::*;
 use rusqlite::Connection;
+use std::collections::{BTreeMap, HashSet};
 
 pub struct TagInfoDatabase;
 
@@ -26,7 +25,8 @@ impl TagInfoDatabase {
             "SELECT upload_count FROM _tags WHERE tag_name IS :tag",
             &[(":tag", tag)],
             |row| {
-                Ok(TagInfo {/// Right now, just a copy of set_tag_count() made to work with TagInfo
+                Ok(TagInfo {
+                    /// Right now, just a copy of set_tag_count() made to work with TagInfo
                     tag: tag.to_owned(),
                     upload_count: row.get(0)?,
                 })
@@ -44,13 +44,19 @@ impl TagInfoDatabase {
         Ok(())
     }
 
+    pub fn remove_tag_info(db: &Connection, tag: &str) -> Result<()> {
+        db.execute("DELETE FROM _tags WHERE tag_name IS :tag", &[(":tag", tag)])
+            .context("Couldn't remove tag {tag} in _tags table")?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::TagMaidDatabase;
     use crate::database::sqlite_tags::TagsDatabase;
+    use crate::TagMaidDatabase;
 
     #[test]
     fn should_upload_and_update_tag_info() {
@@ -64,11 +70,17 @@ mod tests {
 
         assert!(TagsDatabase::create_tags_table(&db).is_ok());
         assert!(TagInfoDatabase::add_tag_info(&db, &tag_info).is_ok());
-        assert_eq!(TagInfoDatabase::get_tag_info_from_tag(&db, "test").unwrap(), tag_info);
+        assert_eq!(
+            TagInfoDatabase::get_tag_info_from_tag(&db, "test").unwrap(),
+            tag_info
+        );
 
         tag_info.upload_count = 1338;
 
         assert!(TagInfoDatabase::update_tag_info(&db, &tag_info).is_ok());
-        assert_eq!(TagInfoDatabase::get_tag_info_from_tag(&db, "test").unwrap(), tag_info);
+        assert_eq!(
+            TagInfoDatabase::get_tag_info_from_tag(&db, "test").unwrap(),
+            tag_info
+        );
     }
 }

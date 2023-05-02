@@ -1,11 +1,11 @@
 //! Utility functions for searching tags. The search is not for files
 //! (which searches in the `_files` database table) but for the tags
 //! themselves (stored in the `_tags` table). This is currently used for search suggestions.
-use std::collections::BTreeMap;
+use crate::data::tag_info::TagInfo;
+use crate::database::sqlite_tags::TagsDatabase;
 use anyhow::Result;
 use rusqlite::Connection;
-use crate::data::{tag_info::TagInfo};
-use crate::database::sqlite_tags::TagsDatabase;
+use std::collections::BTreeMap;
 pub struct TagSearch;
 
 impl TagSearch {
@@ -14,11 +14,20 @@ impl TagSearch {
     /// stored somewhere in tags. Then, `get_tags_starting_with(&db, "bri")` will return
     /// a BTreeMap of the `brie` and `brioche` tags because they started with `bri`, with their
     /// upload count as well.
-    pub fn get_tags_starting_with(db: &Connection, string: &str) -> Result<BTreeMap<i64, Vec<String>>> {
+    pub fn get_tags_starting_with(
+        db: &Connection,
+        string: &str,
+    ) -> Result<BTreeMap<i64, Vec<String>>> {
         let mut quer = db.prepare(
-            format!("SELECT tag_name, upload_count FROM _tags WHERE tag_name LIKE \"{string}%\"").as_str(),
+            format!("SELECT tag_name, upload_count FROM _tags WHERE tag_name LIKE \"{string}%\"")
+                .as_str(),
         )?;
-        let search_result = quer.query_map([], |row| Ok(TagInfo {tag: row.get(0)?, upload_count: row.get(1)?}))?;
+        let search_result = quer.query_map([], |row| {
+            Ok(TagInfo {
+                tag: row.get(0)?,
+                upload_count: row.get(1)?,
+            })
+        })?;
         let mut tag_infos: BTreeMap<i64, Vec<String>> = BTreeMap::new();
         for result in search_result {
             let tag_info = result?;

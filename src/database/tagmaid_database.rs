@@ -5,7 +5,7 @@
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{
     fs_database::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
-    sqlite_tags::TagsDatabase, sqlite_taginfo::TagInfoDatabase
+    sqlite_taginfo::TagInfoDatabase, sqlite_tags::TagsDatabase,
 };
 use anyhow::{Context, Result};
 use log::*;
@@ -237,7 +237,7 @@ impl TagMaidDatabase {
     pub fn get_tag_info(&self, tag: String) -> Option<TagInfo> {
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
-    
+
         match self.get_cache().get_tag_info(&tag) {
             Some(tag_info) => Some(tag_info),
             None => {
@@ -245,7 +245,9 @@ impl TagMaidDatabase {
                     TagInfoDatabase::get_tag_info_from_tag(sql_db.get_connection(), &tag).ok();
 
                 if tag_info.is_some() {
-                    self.get_cache().cache_tag_info(tag_info.clone().unwrap()).ok();
+                    self.get_cache()
+                        .cache_tag_info(tag_info.clone().unwrap())
+                        .ok();
                 }
 
                 return tag_info;
@@ -382,15 +384,21 @@ mod tests {
 
         assert!(db.update_tagfile(&tf).is_ok());
 
-        assert_eq!(db.get_tag_info("test_tag".to_string()), Some(TagInfo {
-            tag: "test_tag".to_string(),
-            upload_count: 1
-        }));
+        assert_eq!(
+            db.get_tag_info("test_tag".to_string()),
+            Some(TagInfo {
+                tag: "test_tag".to_string(),
+                upload_count: 1
+            })
+        );
 
-        assert_eq!(db.get_tag_info("another_tag".to_string()), Some(TagInfo {
-            tag: "another_tag".to_string(),
-            upload_count: 1
-        }));
+        assert_eq!(
+            db.get_tag_info("another_tag".to_string()),
+            Some(TagInfo {
+                tag: "another_tag".to_string(),
+                upload_count: 1
+            })
+        );
 
         assert_eq!(db.get_tag_info("non_existant_tag".to_string()), None);
     }
@@ -406,6 +414,5 @@ mod tests {
         tag_info.upload_count = 1358;
         assert!(db.update_tag_info(&tag_info).is_ok());
         assert_eq!(db.get_tag_info("test".to_string()), Some(tag_info.clone()));
-
     }
 }
