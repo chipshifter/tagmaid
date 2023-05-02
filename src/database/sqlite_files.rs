@@ -243,7 +243,7 @@ impl FilesDatabase {
         // Add tags
         for tag in &file.tags {
             info!(
-                "SqliteDatabse - update_tags_to_file() - Creating tag table for {} if not exists",
+                "SqliteDatabase - update_tags_to_file() - Creating tag table for {} if not exists",
                 &tag
             );
             let query = format!(
@@ -255,15 +255,15 @@ impl FilesDatabase {
             db.execute(query.as_str(), ())
                 .with_context(|| format!("SQLite: Couldn't create {tag} table for database"))?;
 
-            info!("SqliteDatabse - update_tags_to_file() - Inserting hash value {:?} into tag table {}", &file.file_hash, &tag);
+            info!("SqliteDatabase - update_tags_to_file() - Inserting hash value {:?} into tag table {}", &file.file_hash, &tag);
             let query = format!("INSERT OR IGNORE INTO {tag} (file_hash) VALUES (?)");
             db.execute(query.as_str(), [&file.file_hash])
                 .with_context(|| format!("SQLite: Couldn't insert tag into '{tag}' table"))?;
         }
 
-        info!("SqliteDatabse - update_tags_to_file() - Serialising tags");
+        info!("SqliteDatabase - update_tags_to_file() - Serialising tags");
         let file_tags_serialised = serialise_tags(&file.tags)?;
-        info!("SqliteDatabse - update_tags_to_file() - Update _files table");
+        info!("SqliteDatabase - update_tags_to_file() - Update _files table");
         db.execute(
             "UPDATE _files SET tags=(?1) WHERE file_hash IS (?2)",
             [&file_tags_serialised, &file.file_hash],
