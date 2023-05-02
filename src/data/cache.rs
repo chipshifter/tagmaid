@@ -1,5 +1,5 @@
 //! Handmade cache
-use crate::data::search_command::Search;
+use crate::data::{search_command::Search, tag_info::TagInfo};
 use crate::ui::TextureLabel;
 use crate::TagFile;
 use anyhow::{bail, Result};
@@ -9,6 +9,8 @@ use std::sync::RwLock;
 pub struct TagMaidCache {
     // Caches the hash of a TagFile to the associated TagFile object (if it exists)
     tagfile_cache: RwLock<HashMap<Vec<u8>, TagFile>>,
+    // Tag Info
+    tag_cache: RwLock<HashMap<String, TagInfo>>,
     results_cache: RwLock<HashMap<Search, Vec<Vec<u8>>>>,
     thumbnails_cache: RwLock<HashMap<TextureLabel, egui::TextureHandle>>,
 }
@@ -18,6 +20,7 @@ impl TagMaidCache {
         // TODO: Save/load cache from a file
         return TagMaidCache {
             tagfile_cache: RwLock::new(HashMap::new()),
+            tag_cache: RwLock::new(HashMap::new()),
             results_cache: RwLock::new(HashMap::new()),
             thumbnails_cache: RwLock::new(HashMap::new()),
         };
@@ -98,13 +101,36 @@ impl TagMaidCache {
                 cache.insert(label, texture);
                 return Ok(());
             }
-            Err(err) => bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}"),
+            Err(err) => {
+                bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}");
+            }
         }
     }
 
     pub fn get_thumbnail(&self, label: &TextureLabel) -> Option<egui::TextureHandle> {
         match self.thumbnails_cache.try_read() {
             Ok(cache) => cache.get(label).cloned(),
+            Err(_err) => None,
+        }
+    }
+
+    // Tag Cache
+
+    pub fn cache_tag_info(&self, tag_info: TagInfo) -> Result<()> {
+        match self.tag_cache.try_write() {
+            Ok(mut cache) => {
+                cache.insert(tag_info.get_tag(), tag_info);
+                return Ok(());
+            }
+            Err(err) => {
+                bail!("Couldn't write to tag cache: {err}");
+            }
+        }
+    }
+
+    pub fn get_tag_info(&self, tag: &str) -> Option<TagInfo> {
+        match self.tag_cache.try_read() {
+            Ok(cache) => cache.get(tag).cloned(),
             Err(_err) => None,
         }
     }

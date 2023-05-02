@@ -22,7 +22,7 @@ use crate::data::{
 };
 
 use crate::database::{
-    sqlite_database::SqliteDatabase, tag_database::TagDatabase, tagmaid_database::TagMaidDatabase,
+    filesystem::FsDatabase, sqlite_database::SqliteDatabase, tagmaid_database::TagMaidDatabase,
 };
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
@@ -225,13 +225,10 @@ impl TagMaid {
     ) -> Result<()> {
         info!("Grabbing results");
         // No cached results
-        let fs_db_mutex = db.get_fs_db();
-        let fs_db: MutexGuard<TagDatabase> = fs_db_mutex.lock().unwrap();
         let mut cands = match se.first_tag() {
-            Some(s) => fs_db.get_hashes_from_tag(&s),
-            None => fs_db.get_all_file_hashes(),
+            Some(s) => db.get_hashes_from_tag(&s),
+            None => db.get_all_file_hashes(),
         };
-        drop(fs_db);
         if cands.is_err() {
             *searching.lock().unwrap() = false;
             return Err(cands.unwrap_err());
@@ -619,13 +616,23 @@ impl TagMaid {
             Some(tagfile) => {
                 ui.add_space(5.0);
                 ui.vertical_centered(|ui| {
-                    ui.label(egui::RichText::new("Are you sure you want to remove this file?").font(egui::FontId::monospace(20.0)));
-                    ui.label(egui::RichText::new("All the tags will be deleted").font(egui::FontId::monospace(14.0)));
+                    ui.label(
+                        egui::RichText::new("Are you sure you want to remove this file?")
+                            .font(egui::FontId::monospace(20.0)),
+                    );
+                    ui.label(
+                        egui::RichText::new("All the tags will be deleted")
+                            .font(egui::FontId::monospace(14.0)),
+                    );
                     ui.add_space(5.0);
                     ui.vertical_centered_justified(|ui| {
                         ui.columns(2, |ui| {
-                            let yes_button_text = egui::RichText::new("Yes, remove").font(egui::FontId::monospace(14.0)).color(egui::Color32::RED);
-                            let no_button_text = egui::RichText::new("No, cancel").font(egui::FontId::monospace(14.0)).color(egui::Color32::BLACK);
+                            let yes_button_text = egui::RichText::new("Yes, remove")
+                                .font(egui::FontId::monospace(14.0))
+                                .color(egui::Color32::RED);
+                            let no_button_text = egui::RichText::new("No, cancel")
+                                .font(egui::FontId::monospace(14.0))
+                                .color(egui::Color32::BLACK);
                             if ui[0].button(yes_button_text).clicked() {
                                 // Removing all tags and calling update_tagfile()
                                 // will remove it from the database
@@ -633,7 +640,10 @@ impl TagMaid {
                                 cleared_tagfile.remove_all_tags().ok();
                                 let _ = self.db.update_tagfile(&cleared_tagfile);
                                 // We remove the file_hash of the deleted file from the results
-                                self.results.lock().unwrap().retain(|hash| hash != &cleared_tagfile.file_hash);
+                                self.results
+                                    .lock()
+                                    .unwrap()
+                                    .retain(|hash| hash != &cleared_tagfile.file_hash);
 
                                 // File is deleted, so we go back on results instead of view mode
                                 self.mode = ViewPage::Results;
@@ -654,7 +664,7 @@ impl TagMaid {
 
                     let height_limit = 340.0;
                     let width_limit = 650.0;
-    
+
                     let img_size: Vec2 = image_texture.size_vec2();
                     let mut scaled_height = height_limit.clone();
                     let mut scaled_width = &img_size.x * height_limit / &img_size.y;
@@ -666,10 +676,9 @@ impl TagMaid {
                         ui.image(image_texture.id(), egui::vec2(scaled_width, scaled_height));
                     });
                 });
-            },
+            }
             None => {
                 self.mode = ViewPage::Results;
-
             }
         }
     }
@@ -714,7 +723,7 @@ impl TagMaid {
                                 is_cached = true;
                                 *nres.lock().unwrap() = search_results.clone();
                                 *nbool.clone().lock().unwrap() = false;
-                            },
+                            }
                             None => {}
                         }
 
@@ -895,15 +904,17 @@ impl eframe::App for TagMaid {
 
                 // Attempts to cache the search results
                 // Hopefully self.query is initialized
-                match self.db.get_cache().cache_search(self.query.as_ref().unwrap().clone(), self.results.clone().lock().unwrap().to_vec()) {
-                    Ok(()) => {},
+                match self.db.get_cache().cache_search(
+                    self.query.as_ref().unwrap().clone(),
+                    self.results.clone().lock().unwrap().to_vec(),
+                ) {
+                    Ok(()) => {}
                     Err(err) => {
                         // Fails silently because not being able to cache sometimes isn't
                         // that big of a deal
                         info!("WARNING: ui_search(): Couldn't open cache as mutable because it was already being borrowed: {err}");
                     }
                 }
-                
             }
         }
         egui::TopBottomPanel::top("pan").show(ctx, |ui| {

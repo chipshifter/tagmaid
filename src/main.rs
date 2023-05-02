@@ -3,7 +3,7 @@ pub mod data;
 pub mod database;
 pub mod ui;
 use crate::data::{config::Config, tag_file::TagFile};
-use crate::database::{tag_database::TagDatabase, tagmaid_database::TagMaidDatabase};
+use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use anyhow::{bail, Context, Result};
 use image::EncodableLayout;
 #[macro_use]
@@ -14,7 +14,7 @@ fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
-    let db: TagMaidDatabase = database::tagmaid_database::init();
+    let db: TagMaidDatabase = crate::database::tagmaid_database::init();
     #[cfg(feature = "import_samples")]
     import_samples(&db)?;
 

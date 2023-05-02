@@ -1,17 +1,19 @@
 //! File for managing the TagFile structure
 use crate::data::ui_util;
 use anyhow::{bail, Context, Result};
+#[cfg(test)]
+use rand::distributions::{Alphanumeric, DistString};
 use std::collections::HashSet;
 use std::fs::{File, Metadata};
+use std::io::Write;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-
 /// TagFile is a structure used to handle user files to TagDatabase. It contains
 /// some attributes related to the file, such as file name, path, hash, associated tags
 /// (if any present in the database) and a `File` instance for other file operations.
 ///
 /// TagFiles are initialised with `initialise_from_path(filePath: PathBuf)`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TagFile {
     pub path: PathBuf,
     pub file_name: String,
@@ -186,6 +188,42 @@ impl TagFile {
             crate::data::tag_util::bytes_to_hex(&self.file_hash)
         );
     }
+
+    /// Creates a totally random TagFile instance.
+    /// File is located in temp directiories. Used for unit testing
+    #[cfg(test)]
+    pub fn create_random_tagfile() -> TagFile {
+        // random 16-char string
+        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+
+        let tmp_dir = tempfile::tempdir().unwrap();
+        // into_path is necessary for tempdir to persist in the file system
+        let tmp_file_path = tmp_dir.into_path().as_path().join(random_string);
+
+        let mut temp_file = File::create(&tmp_file_path).unwrap();
+        let random_string_2 = Alphanumeric.sample_string(&mut rand::thread_rng(), 256);
+        let _ = &temp_file.write_all(random_string_2.as_bytes()).unwrap();
+
+        let tagfile = TagFile::initialise_from_path(&tmp_file_path).unwrap();
+        return tagfile;
+    }
+
+    /// Creates a random TagFile instance that is uploaded to a random TagDatabase instance.
+    /// File and database is located in temp directiories. Used for unit testing
+    #[cfg(test)]
+    pub fn create_random_tagfile_in_fsdatabase() -> TagFile {
+        let tmp_dir = tempfile::tempdir().unwrap();
+        let mut tmp_path = tmp_dir.into_path();
+
+        // random 16-char string
+        let random_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+        tmp_path.push(random_string);
+
+        let db: crate::FsDatabase = crate::FsDatabase::initialise(&tmp_path).unwrap();
+        let tagfile = TagFile::create_random_tagfile();
+        let uploaded_tagfile = db.upload_file(&tagfile).unwrap();
+        return uploaded_tagfile;
+    }
 }
 
 impl std::fmt::Display for TagFile {
@@ -197,6 +235,8 @@ impl std::fmt::Display for TagFile {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::distributions::{Alphanumeric, DistString};
+
     #[test]
     fn should_tagfile_initialise() {
         use std::collections::HashSet;
