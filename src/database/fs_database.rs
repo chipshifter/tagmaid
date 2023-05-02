@@ -28,14 +28,7 @@ fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()>
         &old_path.display(),
         &new_path.display()
     );
-    let hardlink_result = fs::hard_link(old_path, new_path).with_context(|| {
-        format!(
-            "Couldn't hardlink file from '{:?}' to '{:?}'",
-            old_path, new_path
-        )
-    });
-    if hardlink_result.is_err() {
-        println!("nuuuuu dont fail hardlinkig");
+    if fs::hard_link(old_path, new_path).is_err() {
         info!("hardlink_file_else_copy() - Hardlinking failed; COPYING instead.");
         fs::copy(old_path, new_path).with_context(|| {
             format!(
