@@ -1,3 +1,6 @@
+//! TagInfo is an object which stores information/properties about tags.
+//! Currently the only proprety stored is the upload count, i.e. the amount
+//! of files in the database which contain the tag.
 use crate::data::cache::TagMaidCache;
 use crate::database::{sqlite_tags::TagsDatabase, tagmaid_database::TagMaidDatabase, sqlite_taginfo::TagInfoDatabase};
 use crate::FsDatabase;
