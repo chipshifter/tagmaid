@@ -1,11 +1,9 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo, tag_search::TagSearch};
-use crate::database::{
-    sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase,
-};
+use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase};
 use anyhow::{bail, Context, Result};
+use std::collections::{HashSet, BTreeMap};
 use log::*;
 use rusqlite::Connection;
-use std::collections::{BTreeMap, HashSet};
 
 pub struct TagsDatabase;
 
@@ -48,6 +46,7 @@ impl TagsDatabase {
     }
 
     /// Removes a given `tag` from `_tags` table
+    /// Deprecated: Use TagInfoDatabase::remove_taginfo (same functionality)
     pub fn remove_tag(db: &Connection, tag: &str) -> Result<()> {
         db.execute("DELETE FROM _tags WHERE tag_name IS :tag", &[(":tag", tag)])
             .context("Couldn't remove tag {tag} in _tags table")?;
