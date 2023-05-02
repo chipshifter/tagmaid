@@ -1,8 +1,8 @@
 use super::tag_util;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
-// Until database is finished
-pub trait Database {
+//Until database is finished
+pub trait DatabaseCount {
     fn get_tag_count(&self, name: &str) -> u64;
 }
 
@@ -16,6 +16,7 @@ pub enum SearchOption {
     Or(Box<SearchOption>),
 }
 impl SearchOption {
+    /// Try to add a character to the inner string
     pub fn add_char(&mut self, c: char) -> Result<()> {
         match self {
             Self::Tag(s) => s.push(c),
@@ -42,6 +43,7 @@ impl SearchOption {
         }
         Ok(())
     }
+    /// Check that a tag's characters fit the validations function and make sure that the Search Option isn't empty
     pub fn verify(&self) -> Result<()> {
         match self {
             Self::Tag(t) => {
@@ -70,6 +72,7 @@ impl SearchOption {
             _ => false,
         }
     }
+    /// Returns true if the inner string 
     fn filter_single(&self, tags: &HashSet<String>) -> bool {
         match self {
             SearchOption::Tag(s) => tags.contains(s),
@@ -106,8 +109,9 @@ impl Search {
         let mut fin = Vec::new();
         while let Some(i) = chars.next() {
             match i {
+                // Tag set
                 '[' => {
-                    // Tag set
+                    // If the tagset should go inside some tag modifier (ie. "not" or "or"). -[inner...] -> Not(TagSet[inner...])
                     match fin.last() {
                         Some(SearchOption::NotEmpty) => {
                             *fin.last_mut().unwrap() = SearchOption::Not(Box::new(
@@ -127,17 +131,18 @@ impl Search {
                         }
                     }
                 }
+                // Exit tagset
                 ']' => {
-                    // Exit tagset
                     if depth == 0 {
                         bail!("Unexpected \"]\" ");
                     } else {
                         return Ok(fin);
                     }
                 }
+                // None or maybe part of a tag
                 '-' => {
+                    // Tag character
                     if last != '[' && last != ']' && last != '~' && last != ' ' {
-                        // Tag character
                         match fin.last_mut() {
                             None | Some(SearchOption::TagSet(..)) => {
                                 fin.push(SearchOption::NotEmpty);
@@ -151,12 +156,13 @@ impl Search {
                         fin.push(SearchOption::NotEmpty);
                     }
                 }
+                // Or
                 '~' => {
                     fin.push(SearchOption::OrEmpty);
                 }
                 ' ' => {} // Do nothing
+                // Tag character
                 ch => {
-                    // Tag character
                     if last != '[' && last != ']' && last != ' ' {
                         match fin.last_mut() {
                             None | Some(SearchOption::TagSet(..)) => {
@@ -187,7 +193,7 @@ impl Search {
     pub fn filter_post(&self, tags: &HashSet<String>) -> bool {
         _filter_post(&self.v, tags)
     }
-    pub fn initial_tag(&self, d: &dyn Database) -> Option<String> {
+    pub fn initial_tag(&self, d: &dyn DatabaseCount) -> Option<String> {
         _initial_search_tag(&self.v, d)
     }
     pub fn first_tag(&self) -> Option<String> {
@@ -195,6 +201,7 @@ impl Search {
     }
 }
 
+/// Recursive call back for TagSets
 fn _filter_post(s: &Vec<SearchOption>, tags: &HashSet<String>) -> bool {
     let ors: Vec<&SearchOption> = s.iter().filter(|&x| x.or()).collect();
     for i in s.iter() {
@@ -216,6 +223,7 @@ fn _filter_post(s: &Vec<SearchOption>, tags: &HashSet<String>) -> bool {
     true
 }
 
+/// Recursive callback for TagSets
 fn _first_tag(search: &Vec<SearchOption>) -> Option<String> {
     for i in search.iter() {
         match i {
@@ -231,7 +239,8 @@ fn _first_tag(search: &Vec<SearchOption>) -> Option<String> {
     None
 }
 
-fn _initial_search_tag(search: &Vec<SearchOption>, d: &dyn Database) -> Option<String> {
+/// Recursive callback for TagSets
+fn _initial_search_tag(search: &Vec<SearchOption>, d: &dyn DatabaseCount) -> Option<String> {
     let mut pair: Option<(u64, String)> = None;
     for i in search.iter() {
         match i {
@@ -295,7 +304,7 @@ mod test {
             Self { hm }
         }
     }
-    impl Database for TestDb {
+    impl DatabaseCount for TestDb {
         fn get_tag_count(&self, name: &str) -> u64 {
             *self.hm.get(name).unwrap_or(&0)
         }
