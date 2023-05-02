@@ -209,10 +209,28 @@ impl TagMaidDatabase {
     // TagInfo
 
     pub fn update_tag_info(&self, tag_info: &TagInfo) -> Result<()> {
-        let sql_db_mutex = &self.get_sql_db();
-        let sql_db = sql_db_mutex.lock().unwrap();
+        match &self.get_tag_info(tag_info.get_tag()) {
+            Some(_tag_info) => {
+                // Already in db, update
+                let sql_db_mutex = &self.get_sql_db();
+                let sql_db = sql_db_mutex.lock().unwrap();
+                TagInfoDatabase::update_tag_info(sql_db.get_connection(), tag_info)?;
 
-        TagInfoDatabase::update_tag_info(sql_db.get_connection(), tag_info)?;
+                // Update the cute little cache of course
+                match self.get_cache().cache_tag_info(tag_info.clone()) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        info!("WARNING: update_tag_info(): Couldn't cache TagInfo during update: {err}");
+                    }
+                }
+            }
+            None => {
+                // Not in db, add
+                let sql_db_mutex = &self.get_sql_db();
+                let sql_db = sql_db_mutex.lock().unwrap();
+                TagInfoDatabase::add_tag_info(sql_db.get_connection(), tag_info)?;
+            }
+        }
         Ok(())
     }
 
@@ -375,5 +393,19 @@ mod tests {
         }));
 
         assert_eq!(db.get_tag_info("non_existant_tag".to_string()), None);
+    }
+
+    #[test]
+    fn should_tag_info_update() {
+        let db = TagMaidDatabase::create_random_tagmaiddatabase();
+
+        let mut tag_info = TagInfo::new("test".to_string());
+        assert!(db.update_tag_info(&tag_info).is_ok());
+        assert_eq!(db.get_tag_info("test".to_string()), Some(tag_info.clone()));
+
+        tag_info.upload_count = 1358;
+        assert!(db.update_tag_info(&tag_info).is_ok());
+        assert_eq!(db.get_tag_info("test".to_string()), Some(tag_info.clone()));
+
     }
 }
