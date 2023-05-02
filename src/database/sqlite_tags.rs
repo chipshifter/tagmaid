@@ -1,9 +1,11 @@
 use crate::data::{tag_file::TagFile, tag_info::TagInfo, tag_search::TagSearch};
-use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase};
+use crate::database::{
+    sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase,
+};
 use anyhow::{bail, Context, Result};
-use std::collections::{HashSet, BTreeMap};
 use log::*;
 use rusqlite::Connection;
+use std::collections::{BTreeMap, HashSet};
 
 pub struct TagsDatabase;
 
