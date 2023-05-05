@@ -9,7 +9,17 @@ use image::EncodableLayout;
 #[macro_use]
 extern crate log;
 
-/// main() initialises the database (TagMaidDatabase) and configuration (Config) objects.
+/** The main function.
+
+It does the following in order:
+ - Initialises logging (`env_logger`).
+ - If specified, imports the files located in `src/samples` with a hardcoded tag
+ (this will be changed in the future)
+ - If specified, runs a function meant to be used for handling more database things at
+ startup
+ - Loads [`Config`](crate::data::config)
+ - Launches [`app_main`](crate::app_main) which creates and opens the egui UI. 
+*/
 fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");

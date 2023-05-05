@@ -14,6 +14,8 @@ pub struct TagInfo {
 }
 
 impl TagInfo {
+    /// Takes a given `tag` string and returns an empty TagInfo object.
+    /// The `upload_count` attribute is initialised to 0.
     pub fn new(tag: String) -> TagInfo {
         TagInfo {
             tag: tag,
@@ -21,10 +23,12 @@ impl TagInfo {
         }
     }
 
+    /// Returns an owned value of the `tag` attribute
     pub fn get_tag(&self) -> String {
         self.tag.to_owned()
     }
 
+    /// Returns an owned value of the `upload_count` attribute
     pub fn get_upload_count(&self) -> i64 {
         self.upload_count.to_owned()
     }

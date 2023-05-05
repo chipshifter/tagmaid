@@ -1,5 +1,4 @@
-//! FsDatabase is the interface for managing file-system related operations on the database
-//! (copy/upload a file in the database mainly).
+//! `FsDatabase` is the interface for managing file-system related operations on the database.
 use crate::data::tag_file::TagFile;
 use crate::database::sqlite_database::SqliteDatabase;
 use anyhow::{bail, Context, Result};
@@ -22,6 +21,14 @@ pub struct FsDatabase {
     pub contents: ReadDir,
 }
 
+/** Hardlinks a file from a given path (`old_path`) to a new path (`new_path`). If hardlinking
+fails (this can happen if the two files are on different filesystems or root path), then it
+it attempt to do a copy instead.
+
+Hardlinking means that instead of duplicating files each time, which would use storage for nothing,
+it creates a reference to the same file inode, which gives you two files (the old one and new one) that
+point to the *same* data on the disk. Therefore very little extra storage is used (except for storing metadata).  
+*/
 fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()> {
     info!(
         "hardlink_file_else_copy() - Hardlinking file from old path {} to new path {}",

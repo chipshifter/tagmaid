@@ -1,4 +1,19 @@
-//! Handmade cache
+//! Handmade thread-safe cache for tags, files, and UI elements.
+//!
+//! It uses RwLock for thread-safety. [`TagMaidCache`](TagMaidCache) is initialised
+//! in [`TagMaidDatabase`](crate::database::tagmaid_database::TagMaidDatabase) under
+//! an [`Arc`](std::sync::Arc).
+//!
+//! The cached elements are the following:
+//!
+//! - `tagfile_cache`: Caches the associated TagFile of a given file hash (`Vec<u8>`)
+//! 
+//! - `tag_cache`: Caches the associated TagInfo of a given tag (`String`)
+//!
+//! - `results_cache`: Caches the search results of a given [`Search`](crate::data::search_command::Search) query.
+//!
+//! - `thumbnails_cache`: Caches the thumbnails textures ([TextureHandle](`egui::TextureHandle`)) of a given
+//! texture label ([TextureLabel](crate::ui::TextureLabel))
 use crate::data::{search_command::Search, tag_info::TagInfo};
 use crate::ui::TextureLabel;
 use crate::TagFile;
@@ -7,9 +22,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 pub struct TagMaidCache {
-    // Caches the hash of a TagFile to the associated TagFile object (if it exists)
     tagfile_cache: RwLock<HashMap<Vec<u8>, TagFile>>,
-    // Tag Info
     tag_cache: RwLock<HashMap<String, TagInfo>>,
     results_cache: RwLock<HashMap<Search, Vec<Vec<u8>>>>,
     thumbnails_cache: RwLock<HashMap<TextureLabel, egui::TextureHandle>>,

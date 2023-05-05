@@ -1,4 +1,4 @@
-//! File for managing the TagFile structure
+//! Manages the [`TagFile`](TagFile) object
 use crate::data::ui_util;
 use anyhow::{bail, Context, Result};
 #[cfg(test)]
@@ -8,17 +8,17 @@ use std::fs::{File, Metadata};
 use std::io::Write;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-/// TagFile is a structure used to handle user files to TagDatabase. It contains
+/// TagFile is a object used to handle user files to TagDatabase. It contains
 /// some attributes related to the file, such as file name, path, hash, associated tags
 /// (if any present in the database) and a `File` instance for other file operations.
 ///
-/// TagFiles are initialised with `initialise_from_path(filePath: PathBuf)`.
+/// TagFiles are initialised with [`initialise_from_path`](TagFile::initialise_from_path).
 #[derive(Debug, Clone, PartialEq)]
 pub struct TagFile {
     pub path: PathBuf,
     pub file_name: String,
-    /// NOTE: `Vec<u8>` is used here because `rusqlite` implement `FromSql`/`ToSql` for it
-    /// (therefore is easy to handle in `SqliteDatabase`)
+    // NOTE: `Vec<u8>` is used here because `rusqlite` implement `FromSql`/`ToSql` for it
+    // (therefore is easy to handle in `SqliteDatabase`)
     pub file_hash: Vec<u8>,
     pub tags: HashSet<String>,
 }
@@ -76,9 +76,9 @@ impl TagFile {
 
     /// Adds the given tag to the HashSet from the `tags` attribute.
     ///
-    /// ATTENTION: This *does not* update the tags saved in database, only the loaded object
-    /// in memory. To update/save the tags change, use
-    /// the `update_tagfile()` function in `TagMaidDatabase`.
+    /// ATTENTION: This *does not* update the tags saved in database, only the instance loaded
+    /// in the memory. To update/save the tags change, use
+    /// [`update_tagfile`](crate::database::tagmaid_database::TagMaidDatabase::update_tagfile)
     pub fn add_tag(&mut self, tag: &str) -> Result<()> {
         if super::tag_util::is_tag_name_valid(tag) {
             self.tags.insert(tag.to_owned());

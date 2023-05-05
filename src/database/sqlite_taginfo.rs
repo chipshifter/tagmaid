@@ -1,5 +1,7 @@
-/// High-level database interface for TagInfo
-/// Uses _tags (sqlite_tags.rs)
+//! The database interface for handling [`TagInfo`](crate::data::tag_info) objects 
+//! in the SQLite database (stored in the `_tags` table). It is higher level than
+//! `sqlite_tags` which doesn't handle TagInfo but raw data (and is deprecated for use).
+
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase};
 use anyhow::{bail, Context, Result};

@@ -1,7 +1,14 @@
-//! TagMaidDatabase is the high-level component for managing the database
+//! TagMaidDatabase is the high-level component for managing all of the database.
 //! You probably want to use this if you deal with the files one way or another.
-//! It is built on top of Arc<> and therefore can be cloned cheaply.
+//! It is built on top of [`Arc`](std::sync::Arc) and therefore can be cloned cheaply.
 //! It is initialised once in main(), so a full restart would be required to change it.
+//!
+//! Each database folder has the following hierarchy inside:
+//!  - `files/` is the folder that contains all of the files that are added to TagMaid.
+//!  The uploaded files are moved here using [`FsDatabase`](crate::database::filesystem).
+//!  - `sqlite.db` is the SQLite database file. The file and connection is managed by 
+//!  [`SqliteDatabase`](crate::database::sqlite_database), but the operations on that
+//!  database are handled in other places. Visit [`database.rs`](crate::database) to learn more.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{
     filesystem::FsDatabase, sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase,
@@ -47,7 +54,10 @@ pub fn get_database_path(custom_parent_path: Option<PathBuf>) -> Result<PathBuf>
     }
 }
 
-/// Initialises the database.
+/// Initialises the database by creating the necessary files and returning an instance of
+/// [`TagMaidDatabase`](TagMaidDatabase). It is called once by [main](`crate::main`).
+/// At the moment the database name is hardcoded but in the future it will be
+/// possible to change it.
 pub fn init() -> TagMaidDatabase {
     // TODO: Put db_name in Config
     let db_name = "frank";
@@ -90,6 +100,13 @@ impl TagMaidDatabase {
         return self.cache.clone();
     }
 
+    /// Given a [`TagFile`](`crate::data::tag_file::TagFile`), this function does one of
+    /// two things:
+    ///  - If the file was not existing in the database, it uploads it as-is.
+    ///  - If the file was already existing in the database, it will replace the old file
+    /// information in the database with the new file information (in other words,
+    /// it _updates_ the file...)
+    /// It also attempts to cache it.
     pub fn update_tagfile(&self, tf: &TagFile) -> Result<()> {
         info!("Updating {tf}");
 
@@ -152,6 +169,7 @@ impl TagMaidDatabase {
         Ok(())
     }
 
+    /// Deletes the tagfile from the SQLite database and filesystem.
     pub fn remove_tagfile(&self, file: &TagFile) -> Result<()> {
         let sql_db_mutex = &self.get_sql_db();
         let sql_db = sql_db_mutex.lock().unwrap();
@@ -162,7 +180,7 @@ impl TagMaidDatabase {
         FilesDatabase::remove_file(sql_db_connection, file)?;
         Ok(())
     }
-
+    
     pub fn get_tagfile_from_hash(&self, hash: &Vec<u8>) -> Result<TagFile> {
         debug!(
             "Getting TagFile from file hash {} (trimmed)",
