@@ -1,3 +1,4 @@
+/// Interface for the `_tags` table
 use crate::data::{tag_file::TagFile, tag_info::TagInfo, tag_search::TagSearch};
 use crate::database::{sqlite_database::SqliteDatabase, sqlite_files::FilesDatabase, sqlite_taginfo::TagInfoDatabase};
 use anyhow::{bail, Context, Result};
@@ -8,6 +9,9 @@ use rusqlite::Connection;
 pub struct TagsDatabase;
 
 impl TagsDatabase {
+    /// Called in [`open_db_connection`](crate::database::sqlite_database::open_db_connection)
+    /// creates the _tags table (if it doesn't already exist). Do not use outside of this
+    /// scenario.
     pub fn create_tags_table(db: &Connection) -> Result<()> {
         // Creates the `_tags` table.
         //  `tag_name`: The tag name
