@@ -26,6 +26,7 @@ log = "0.4"
 
 [features]
 ui_debug=[]
+new_search=[]
 import_samples=[]
 manual=[]
 

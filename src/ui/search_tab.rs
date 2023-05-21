@@ -1,4 +1,3 @@
-
-pub fn render(ui: &mut egui::Ui, _ctx: &egui::Context) {
-    
+pub fn render(_ctx: &egui::Context, ui: &mut egui::Ui) {
+    ui.label("Hello");
 }

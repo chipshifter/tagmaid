@@ -1,3 +1,4 @@
+pub mod search_tab;
 use anyhow::{bail, Context, Result};
 use egui::{
     epaint::text::TextWrapping,
@@ -55,7 +56,9 @@ impl TextureLabel {
 
 enum ViewPage {
     Add,
-    Search,
+    Search,    
+    #[cfg(feature = "new_search")]
+    NewSearch,
     Results,
     #[cfg(feature = "ui_debug")]
     Debug,
@@ -688,6 +691,10 @@ impl TagMaid {
         }
     }
 
+    fn ui_search_new(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+        search_tab::render(ctx, ui);
+    }
+
     /// The "Search" tab
     fn ui_search(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
@@ -709,7 +716,8 @@ impl TagMaid {
                     }
                 }
             }
-            ui.vertical_centered(|ui| {
+            ui.add_space(20.0);
+            ui.horizontal(|ui| {
                 let vis = &mut ui.style_mut().visuals;
                 vis.override_text_color = Some(Color32::from_rgb(127, 127, 127));
                 vis.widgets.active.bg_fill = match vis.widgets.active.bg_fill {
@@ -722,9 +730,20 @@ impl TagMaid {
                         Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
                     }
                 };
-                for i in self.search_suggestions.iter() {
+                for i in (&self.search_suggestions.clone()).iter() {
                     for e in i.1.iter() {
-                        ui.button(format!("{} ({})", e, i.0)); // TODO make clickable
+                        let tag_name = e.clone();
+                        let tag_count = i.0;
+                        let button_text = egui::RichText::new(format!("{} ({})", tag_name, tag_count))
+                                .font(egui::FontId::monospace(13.0))
+                                .color(egui::Color32::BLACK);
+
+                        let button = ui.button(button_text); 
+
+                        if button.clicked() {
+                            self.search += " ";
+                            self.search += &tag_name;
+                        }
                     }
                 }
             });
@@ -956,6 +975,10 @@ impl eframe::App for TagMaid {
                 if ui.button("Search").clicked() {
                     self.mode = ViewPage::Search;
                 }
+                #[cfg(feature = "new_search")]
+                if ui.button("Search (New)").clicked() {
+                    self.mode = ViewPage::NewSearch;
+                }
                 if ui.button("Results").clicked() {
                     self.mode = ViewPage::Results;
                 }
@@ -1015,6 +1038,10 @@ impl eframe::App for TagMaid {
             }
             ViewPage::Search => {
                 self.ui_search(ctx, ui);
+            }
+            #[cfg(feature = "new_search")]
+            ViewPage::NewSearch => {
+                self.ui_search_new(ctx, ui);
             }
             ViewPage::Results => {
                 self.ui_results(ctx, ui);
