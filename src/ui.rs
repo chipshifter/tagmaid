@@ -2,16 +2,17 @@ use anyhow::{bail, Context, Result};
 use egui::{
     epaint::text::TextWrapping,
     text::{LayoutJob, TextFormat},
-    FontFamily, FontId, Vec2,
+    FontFamily, FontId, Vec2, util::undoer::Settings, Color32,
 };
 use image::EncodableLayout;
 
 use std::{
     cell::RefCell,
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap, BTreeMap},
     path::PathBuf,
     rc::Rc,
     sync::{Arc, Mutex, MutexGuard, RwLock},
+    cmp::min
 };
 
 use crate::data::{
@@ -19,6 +20,7 @@ use crate::data::{
     config::{Config, Theme},
     search_command::Search,
     tag_file::TagFile,
+    tag_search::TagSearch
 };
 
 use crate::database::{
@@ -57,6 +59,7 @@ enum ViewPage {
     Results,
     #[cfg(feature = "ui_debug")]
     Debug,
+    Settings,
     View,
     Edit,
     RemoveFile,
@@ -103,6 +106,7 @@ pub struct TagMaid {
     search_err: Option<String>,
     search_options: Option<Search>,
     search_thread: Option<std::thread::JoinHandle<()>>,
+    search_suggestions: BTreeMap<i64, Vec<String>>,
     // Results
     query: Option<Search>,
     update_search: Arc<Mutex<bool>>,
@@ -132,6 +136,7 @@ impl TagMaid {
             search_err: None,
             search_options: None,
             search_thread: None,
+            search_suggestions: BTreeMap::new(),
             thumbnail_paths: Arc::new(RwLock::new(HashMap::new())),
             add_path: None,
             path_future: None,
@@ -694,6 +699,35 @@ impl TagMaid {
         ui.add_space(5.0);
         ui.vertical_centered(|ui| {
             let search_input = ui.text_edit_singleline(&mut self.search);
+            if search_input.changed() {
+                if let Some(last) = self.search.split(' ').last() {
+                    match TagSearch::get_tags_starting_with(self.db.get_sql_db().lock().unwrap().get_connection(), last) {
+                        Ok(s) => {
+                            self.search_suggestions = s;
+                        }
+                        Err(..) => {}
+                    }
+                }
+            }
+            ui.vertical_centered(|ui| {
+                let vis = &mut ui.style_mut().visuals;
+                vis.override_text_color = Some(Color32::from_rgb(127, 127, 127));
+                vis.widgets.active.bg_fill = match vis.widgets.active.bg_fill {
+                    c => {
+                        Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
+                    }
+                };
+                vis.widgets.hovered.bg_fill = match vis.widgets.active.bg_fill {
+                    c => {
+                        Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
+                    }
+                };
+                for i in self.search_suggestions.iter() {
+                    for e in i.1.iter() {
+                        ui.button(format!("{} ({})", e, i.0)); // TODO make clickable
+                    }
+                }
+            });
             if !search_input.has_focus() && !search_input.lost_focus() {
                 // Force focus on the search bar since that's all there is in the window
                 // (not a very nice way of doing it though)
@@ -932,6 +966,9 @@ impl eframe::App for TagMaid {
                     self.edit_tags = BTreeSet::new();
                     self.mode = ViewPage::Add;
                 }
+                if ui.button("Settings").clicked() {
+                    self.mode = ViewPage::Settings;
+                }
                 #[cfg(feature = "ui_debug")]
                 if ui.button("Debug").clicked() {
                     self.mode = ViewPage::Debug;
@@ -991,6 +1028,12 @@ impl eframe::App for TagMaid {
             #[cfg(feature = "ui_debug")]
             ViewPage::Debug => {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    ui.label("Egui settings:");
+                    ctx.settings_ui(ui);
+                });
+            }
+            ViewPage::Settings => {
+                egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.horizontal(|ui| {
                         if ui.button("Set to light theme 🔆").clicked() {
                             ctx.set_visuals(egui::Visuals::light());
@@ -1001,8 +1044,6 @@ impl eframe::App for TagMaid {
                             self.conf.theme = Theme::Nameless;
                         }
                     });
-                    ui.label("Egui settings:");
-                    ctx.settings_ui(ui);
                 });
             }
             ViewPage::Edit => {
