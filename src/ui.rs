@@ -692,7 +692,15 @@ impl TagMaid {
     }
 
     fn ui_search_new(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
-        search_tab::render(ctx, ui);
+        ui.horizontal(|ui| {
+            self.ui_logo(ctx, ui);
+            ui.label(egui::RichText::new("Search // DEV").font(egui::FontId::monospace(40.0)));
+            ui.add_space(15.0);
+        });
+        ui.add(egui::Separator::default().horizontal());
+        ui.add_space(5.0);
+
+        search_tab::render(self, ctx, ui);
     }
 
     /// The "Search" tab
