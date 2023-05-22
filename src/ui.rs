@@ -110,6 +110,7 @@ pub struct TagMaid {
     search_options: Option<Search>,
     search_thread: Option<std::thread::JoinHandle<()>>,
     search_suggestions: BTreeMap<i64, Vec<String>>,
+    search_last_len: usize,
     // Results
     query: Option<Search>,
     update_search: Arc<Mutex<bool>>,
@@ -140,6 +141,7 @@ impl TagMaid {
             search_options: None,
             search_thread: None,
             search_suggestions: BTreeMap::new(),
+            search_last_len: 0,
             thumbnail_paths: Arc::new(RwLock::new(HashMap::new())),
             add_path: None,
             path_future: None,
@@ -719,6 +721,7 @@ impl TagMaid {
                     match TagSearch::get_tags_starting_with(self.db.get_sql_db().lock().unwrap().get_connection(), last) {
                         Ok(s) => {
                             self.search_suggestions = s;
+                            self.search_last_len = last.len();
                         }
                         Err(..) => {}
                     }
@@ -738,19 +741,20 @@ impl TagMaid {
                         Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
                     }
                 };
-                for i in (&self.search_suggestions.clone()).iter() {
-                    for e in i.1.iter() {
-                        let tag_name = e.clone();
-                        let tag_count = i.0;
-                        let button_text = egui::RichText::new(format!("{} ({})", tag_name, tag_count))
+                for suggestion in self.search_suggestions.iter() {
+                    for tag_name in suggestion.1.iter() {
+                        let tag_count = suggestion.0;
+                        let button_text = egui::RichText::new(format!("{tag_name} ({tag_count})"))
                                 .font(egui::FontId::monospace(13.0))
                                 .color(egui::Color32::BLACK);
 
                         let button = ui.button(button_text); 
 
                         if button.clicked() {
-                            self.search += " ";
-                            self.search += &tag_name;
+                            if self.search.chars().last() != Some(' ') && self.search_last_len == 0 {
+                                self.search += " ";
+                            }
+                            self.search += &tag_name[self.search_last_len..];
                         }
                     }
                 }
