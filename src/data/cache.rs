@@ -7,7 +7,7 @@
 //! The cached elements are the following:
 //!
 //! - `tagfile_cache`: Caches the associated TagFile of a given file hash (`Vec<u8>`)
-//! 
+//!
 //! - `tag_cache`: Caches the associated TagInfo of a given tag (`String`)
 //!
 //! - `results_cache`: Caches the search results of a given [`Search`](crate::data::search_command::Search) query.

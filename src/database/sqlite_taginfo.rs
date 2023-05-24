@@ -1,4 +1,4 @@
-//! The database interface for handling [`TagInfo`](crate::data::tag_info) objects 
+//! The database interface for handling [`TagInfo`](crate::data::tag_info) objects
 //! in the SQLite database (stored in the `_tags` table). It is higher level than
 //! `sqlite_tags` which doesn't handle TagInfo but raw data (and is deprecated for use).
 

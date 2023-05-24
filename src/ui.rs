@@ -3,17 +3,18 @@ use anyhow::{bail, Context, Result};
 use egui::{
     epaint::text::TextWrapping,
     text::{LayoutJob, TextFormat},
-    FontFamily, FontId, Vec2, util::undoer::Settings, Color32,
+    util::undoer::Settings,
+    Color32, FontFamily, FontId, Vec2, Rounding,
 };
 use image::EncodableLayout;
 
 use std::{
     cell::RefCell,
-    collections::{BTreeSet, HashMap, BTreeMap},
+    cmp::min,
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::PathBuf,
     rc::Rc,
     sync::{Arc, Mutex, MutexGuard, RwLock},
-    cmp::min
 };
 
 use crate::data::{
@@ -21,7 +22,7 @@ use crate::data::{
     config::{Config, Theme},
     search_command::Search,
     tag_file::TagFile,
-    tag_search::TagSearch
+    tag_search::TagSearch,
 };
 
 use crate::database::{
@@ -56,7 +57,7 @@ impl TextureLabel {
 
 enum ViewPage {
     Add,
-    Search,    
+    Search,
     #[cfg(feature = "new_search")]
     NewSearch,
     Results,
@@ -543,7 +544,10 @@ impl TagMaid {
         ui.horizontal(|ui| {
             self.ui_logo(ctx, ui);
             ui.label(egui::RichText::new("View ").font(egui::FontId::monospace(40.0)));
-            match self.viewmode_tagfile_hashes.get(self.view_index.unwrap_or(0)) {
+            match self
+                .viewmode_tagfile_hashes
+                .get(self.view_index.unwrap_or(0))
+            {
                 Some((_, name)) => {
                     ui.label(name);
                 }
@@ -553,7 +557,10 @@ impl TagMaid {
         });
         ui.add(egui::Separator::default().horizontal());
         ui.add_space(5.0);
-        match self.viewmode_tagfile_hashes.get(self.view_index.unwrap_or(0)) {
+        match self
+            .viewmode_tagfile_hashes
+            .get(self.view_index.unwrap_or(0))
+        {
             Some((hash, _)) => {
                 let tagfile = self.db.get_tagfile_from_hash(&hash).unwrap();
                 let image_path = tagfile.get_path().to_owned();
@@ -718,7 +725,10 @@ impl TagMaid {
             let search_input = ui.text_edit_singleline(&mut self.search);
             if search_input.changed() {
                 if let Some(last) = self.search.split(' ').last() {
-                    match TagSearch::get_tags_starting_with(self.db.get_sql_db().lock().unwrap().get_connection(), last) {
+                    match TagSearch::get_tags_starting_with(
+                        self.db.get_sql_db().lock().unwrap().get_connection(),
+                        last,
+                    ) {
                         Ok(s) => {
                             self.search_suggestions = s;
                             self.search_last_len = last.len();
@@ -730,28 +740,33 @@ impl TagMaid {
             ui.add_space(20.0);
             ui.horizontal(|ui| {
                 let vis = &mut ui.style_mut().visuals;
-                vis.override_text_color = Some(Color32::from_rgb(127, 127, 127));
-                vis.widgets.active.bg_fill = match vis.widgets.active.bg_fill {
-                    c => {
-                        Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
-                    }
-                };
-                vis.widgets.hovered.bg_fill = match vis.widgets.active.bg_fill {
-                    c => {
-                        Color32::from_rgb(c.r()-min(10, c.r()), c.g()-min(10, c.g()), c.b()-min(10, c.b()))
-                    }
-                };
+                vis.widgets.active.rounding = Rounding::none();
+                vis.widgets.hovered.rounding = Rounding::none();
+                vis.override_text_color = Some(Color32::from_rgb(120, 120, 120));
+                let a_bg = vis.widgets.active.bg_fill;
+                vis.widgets.active.bg_fill = Color32::from_rgb(
+                    a_bg.r() - min(10, a_bg.r()),
+                    a_bg.g() - min(10, a_bg.g()),
+                    a_bg.b() - min(10, a_bg.b()),
+                );
+                let h_bg = vis.widgets.hovered.bg_fill;
+                vis.widgets.hovered.bg_fill = Color32::from_rgb(
+                    h_bg.r() - min(10, h_bg.r()),
+                    h_bg.g() - min(10, h_bg.g()),
+                    h_bg.b() - min(10, h_bg.b()),
+                );
                 for suggestion in self.search_suggestions.iter() {
                     for tag_name in suggestion.1.iter() {
                         let tag_count = suggestion.0;
                         let button_text = egui::RichText::new(format!("{tag_name} ({tag_count})"))
-                                .font(egui::FontId::monospace(13.0))
-                                .color(egui::Color32::BLACK);
+                            .font(egui::FontId::monospace(13.0));
 
-                        let button = ui.button(button_text); 
+                        let button = ui.button(button_text);
 
                         if button.clicked() {
-                            if self.search.chars().last() != Some(' ') && self.search_last_len == 0 {
+                            if !matches!(self.search.chars().last(), Some(' ') | None)
+                                && self.search_last_len == 0
+                            {
                                 self.search += " ";
                             }
                             self.search += &tag_name[self.search_last_len..];
@@ -848,8 +863,10 @@ impl TagMaid {
                 // - Update selected hash used in View page
                 // - Send user to view page
                 // (In the future maybe, add browsing history by logging these clicks/hashes)
-                self.viewmode_tagfile_hashes.push((tagfile.file_hash.to_vec(), tagfile_name.to_owned()));
-                self.view_index.replace(self.viewmode_tagfile_hashes.len()-1);
+                self.viewmode_tagfile_hashes
+                    .push((tagfile.file_hash.to_vec(), tagfile_name.to_owned()));
+                self.view_index
+                    .replace(self.viewmode_tagfile_hashes.len() - 1);
                 self.mode = ViewPage::View;
             }
         });

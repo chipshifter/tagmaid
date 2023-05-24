@@ -27,7 +27,7 @@ it attempt to do a copy instead.
 
 Hardlinking means that instead of duplicating files each time, which would use storage for nothing,
 it creates a reference to the same file inode, which gives you two files (the old one and new one) that
-point to the *same* data on the disk. Therefore very little extra storage is used (except for storing metadata).  
+point to the *same* data on the disk. Therefore very little extra storage is used (except for storing metadata).
 */
 fn hardlink_file_else_copy(old_path: &PathBuf, new_path: &PathBuf) -> Result<()> {
     info!(

@@ -18,7 +18,7 @@ It does the following in order:
  - If specified, runs a function meant to be used for handling more database things at
  startup
  - Loads [`Config`](crate::data::config)
- - Launches [`app_main`](crate::app_main) which creates and opens the egui UI. 
+ - Launches [`app_main`](crate::app_main) which creates and opens the egui UI.
 */
 fn main() -> Result<()> {
     env_logger::init();

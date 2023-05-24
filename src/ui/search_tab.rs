@@ -1,10 +1,10 @@
 pub mod search_input;
 
 pub struct SearchUIData {
-    search_field_text: String
+    search_field_text: String,
 }
 impl SearchUIData {
-    pub fn new()-> SearchUIData {
+    pub fn new() -> SearchUIData {
         SearchUIData {
             search_field_text: String::new(),
         }

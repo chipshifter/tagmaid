@@ -1,7 +1,7 @@
 //! SqliteDatabase is the main component for handling the database connection.
-//! The database is stored as the `sqlite.db` file located in the main 
+//! The database is stored as the `sqlite.db` file located in the main
 //! [`TagMaidDatabase`](crate::database::tagmaid_database) path. If you want
-//! more information on the database internals, visit 
+//! more information on the database internals, visit
 //! [`SqliteDatabase`](crate::database::sqlite_database::SqliteDatabase).
 //!
 //! The actual database is structure in the following way. There are as of yet 3 tables:
@@ -10,13 +10,13 @@
 //! It is being handled by functions in [`sqlite_files`](crate::database::sqlite_files).
 //!
 //! - `_tags`, for storing information about tags (with [`TagInfo`](crate::data::tag_info::TagInfo)).
-//! It is being handled by functions in [`sqlite_taginfo`](crate::database::sqlite_taginfo) and 
+//! It is being handled by functions in [`sqlite_taginfo`](crate::database::sqlite_taginfo) and
 //! [`sqlite_tags`](crate::database::sqlite_tags).
 //!
 //! - One table for each tag, named after them (with no underscores), which stores information about the file hashes
 //! using the tag. It is being currently handled by functions in [`sqlite_files`](crate::database::sqlite_files).
 //!
-//! You should however probably deal with everything through the functions given in 
+//! You should however probably deal with everything through the functions given in
 //! [`TagMaidDatabase`](crate::database::tagmaid_database).
 use crate::data::{tag_file::TagFile, tag_info::TagInfo};
 use crate::database::{sqlite_files::FilesDatabase, sqlite_tags::TagsDatabase};

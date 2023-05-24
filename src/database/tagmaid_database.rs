@@ -6,7 +6,7 @@
 //! Each database folder has the following hierarchy inside:
 //!  - `files/` is the folder that contains all of the files that are added to TagMaid.
 //!  The uploaded files are moved here using [`FsDatabase`](crate::database::filesystem).
-//!  - `sqlite.db` is the SQLite database file. The file and connection is managed by 
+//!  - `sqlite.db` is the SQLite database file. The file and connection is managed by
 //!  [`SqliteDatabase`](crate::database::sqlite_database), but the operations on that
 //!  database are handled in other places. Visit [`database.rs`](crate::database) to learn more.
 use crate::data::{cache::TagMaidCache, tag_file::TagFile, tag_info::TagInfo};
@@ -180,7 +180,7 @@ impl TagMaidDatabase {
         FilesDatabase::remove_file(sql_db_connection, file)?;
         Ok(())
     }
-    
+
     pub fn get_tagfile_from_hash(&self, hash: &Vec<u8>) -> Result<TagFile> {
         debug!(
             "Getting TagFile from file hash {} (trimmed)",

@@ -15,9 +15,9 @@
 //!  - [`sqlite_tags`](sqlite_tags): Used for managing the `_tags` table directly. Handling it using
 //! [`TagMaidDatabase`](crate::database::tagmaid_database) is recommended instead.
 //!
-//!  - [`sqlite_taginfo`](sqlite_taginfo): It is the new interface for `_tags`, acting as a replacement for `sqlite_tags`. 
+//!  - [`sqlite_taginfo`](sqlite_taginfo): It is the new interface for `_tags`, acting as a replacement for `sqlite_tags`.
 //!
-//!  - [`filesystem`](filesystem): Used for handling filesystem operations. 
+//!  - [`filesystem`](filesystem): Used for handling filesystem operations.
 pub mod filesystem;
 pub mod sqlite_database;
 pub mod sqlite_files;

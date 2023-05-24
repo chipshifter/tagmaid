@@ -72,7 +72,7 @@ impl SearchOption {
             _ => false,
         }
     }
-    /// Returns true if the inner string 
+    /// Returns true if the inner string
     fn filter_single(&self, tags: &HashSet<String>) -> bool {
         match self {
             SearchOption::Tag(s) => tags.contains(s),
