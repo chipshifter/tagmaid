@@ -1,10 +1,6 @@
 use super::SearchUIData;
 
 pub fn render(_ctx: &egui::Context, ui: &mut egui::Ui, search_ui_data: &mut SearchUIData) {
-    ui.label("SearchInput");
-<<<<<<< HEAD
-}
-=======
     let mut query_string = String::new();
     let search_textfield = ui.text_edit_singleline(&mut search_ui_data.search_field_text);
     if (search_textfield.changed()) {
@@ -20,4 +16,3 @@ pub fn render(_ctx: &egui::Context, ui: &mut egui::Ui, search_ui_data: &mut Sear
         println!("Enter: {}", query_string);
     }
 }
->>>>>>> 7b60d73 (New Search Tab: Add search input + Responses)
