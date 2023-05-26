@@ -11,7 +11,5 @@ impl SearchUIData {
     }
 }
 pub fn render(ui_data: &mut crate::ui::TagMaid, _ctx: &egui::Context, ui: &mut egui::Ui) {
-    ui.label("Hello");
-    let mut search_ui_data = SearchUIData::new();
-    search_input::render(_ctx, ui);
+    search_input::render(_ctx, ui, &mut ui_data.search_ui_data);
 }

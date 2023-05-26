@@ -128,6 +128,7 @@ pub struct TagMaid {
     edit_add_tags: String,
     // Remove
     remove_tagfile: Option<TagFile>,
+    search_ui_data: crate::ui::search_tab::SearchUIData
 }
 impl TagMaid {
     pub fn new(_cc: &eframe::CreationContext<'_>, db: TagMaidDatabase, conf: Config) -> Self {
@@ -153,6 +154,8 @@ impl TagMaid {
             edit_tags: BTreeSet::new(),
             edit_add_tags: String::new(),
             remove_tagfile: None,
+            // New search data,
+            search_ui_data: crate::ui::search_tab::SearchUIData::new()
         }
     }
 
