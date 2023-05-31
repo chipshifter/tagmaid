@@ -4,7 +4,7 @@ use egui::{
     epaint::text::TextWrapping,
     text::{LayoutJob, TextFormat},
     util::undoer::Settings,
-    Color32, FontFamily, FontId, Vec2, Rounding,
+    Color32, FontFamily, FontId, Rounding, Vec2,
 };
 use image::EncodableLayout;
 
@@ -128,7 +128,7 @@ pub struct TagMaid {
     edit_add_tags: String,
     // Remove
     remove_tagfile: Option<TagFile>,
-    search_ui_data: crate::ui::search_tab::SearchUIData
+    search_ui_data: crate::ui::search_tab::SearchUIData,
 }
 impl TagMaid {
     pub fn new(_cc: &eframe::CreationContext<'_>, db: TagMaidDatabase, conf: Config) -> Self {
@@ -155,7 +155,7 @@ impl TagMaid {
             edit_add_tags: String::new(),
             remove_tagfile: None,
             // New search data,
-            search_ui_data: crate::ui::search_tab::SearchUIData::new()
+            search_ui_data: crate::ui::search_tab::SearchUIData::new(),
         }
     }
 
