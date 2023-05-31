@@ -1,10 +1,11 @@
 pub mod search_tab;
+pub mod tabs;
 use anyhow::{bail, Context, Result};
 use egui::{
     epaint::text::TextWrapping,
     text::{LayoutJob, TextFormat},
     util::undoer::Settings,
-    Color32, FontFamily, FontId, Vec2, Rounding,
+    Color32, FontFamily, FontId, Rounding, Vec2,
 };
 use image::EncodableLayout;
 
@@ -128,7 +129,7 @@ pub struct TagMaid {
     edit_add_tags: String,
     // Remove
     remove_tagfile: Option<TagFile>,
-    search_ui_data: crate::ui::search_tab::SearchUIData
+    search_ui_data: crate::ui::search_tab::SearchUIData,
 }
 impl TagMaid {
     pub fn new(_cc: &eframe::CreationContext<'_>, db: TagMaidDatabase, conf: Config) -> Self {
@@ -155,7 +156,7 @@ impl TagMaid {
             edit_add_tags: String::new(),
             remove_tagfile: None,
             // New search data,
-            search_ui_data: crate::ui::search_tab::SearchUIData::new()
+            search_ui_data: crate::ui::search_tab::SearchUIData::new(),
         }
     }
 
@@ -496,7 +497,7 @@ impl TagMaid {
                 let click_label = ui.label(egui::RichText::new("...or click here to import it yourself").underline().font(egui::FontId::monospace(20.0)));
                 let click_label_response = click_label.interact(egui::Sense::click());
                 if click_label_response.clicked() && self.path_future.is_none() {
-                    self.path_future = Some(std::thread::spawn(|| rfd::FileDialog::new().pick_file()));
+                    //self.path_future = Some(std::thread::spawn(|| rfd::FileDialog::new().pick_file()));
                 }
             });
             if let Some(s) = &self.path_future {

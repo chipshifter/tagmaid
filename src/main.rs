@@ -2,12 +2,17 @@
 pub mod data;
 pub mod database;
 pub mod ui;
+pub mod feature_flags;
+use crate::feature_flags::FeatureFlags;
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use anyhow::{bail, Context, Result};
 use image::EncodableLayout;
 #[macro_use]
 extern crate log;
+
+use dioxus::prelude::*;
+use dioxus_router::{Redirect, Route, Router};
 
 /** The main function.
 
@@ -33,11 +38,31 @@ fn main() -> Result<()> {
     #[cfg(feature = "manual")]
     manual_db(&db)?;
 
+    if FeatureFlags::DIOXUS_UI {
+        dioxus_desktop::launch(app);
+    }
+
     let cfg = Config::load();
-
     app_main(db.clone(), cfg)?;
-
     Ok(())
+}
+
+/// dioxus
+fn app(cx: Scope) -> Element {
+    cx.render(rsx! {
+        style { include_str!("../src/ui/style.css") }
+        Router {
+            header {
+                crate::ui::tabs::render {}
+            }
+            Route { to: "/search", crate::ui::tabs::search_tab::render {} }
+            Route { to: "/results", crate::ui::tabs::results_tab::render {} }
+            Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
+            Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
+
+            Redirect { from: "", to: "/search" }
+        }
+    })
 }
 
 /// egui initialisation function

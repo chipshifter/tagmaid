@@ -1,0 +1,16 @@
+.tabs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    height: 16px;
+    background-color: #2196F3;
+    color: white;
+    display: flex;
+    align-items: center;
+} 
+
+td {
+    margin: 4px;
+}
