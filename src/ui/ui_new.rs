@@ -2,34 +2,14 @@ use crate::{TagFile, TagMaidDatabase};
 use dioxus::prelude::*;
 use dioxus_router::{Redirect, Route, Router};
 
-#[derive(Copy, Clone)]
-pub struct UIData {
-    pub db: &'static TagMaidDatabase,
-    pub search_results_hashes: &'static Vec<Vec<u8>>,
-}
-
-impl UIData {
-    pub fn new(db: &'static TagMaidDatabase) -> Self {
-        static SEARCH_RESULTS_HASHES: Vec<Vec<u8>> = Vec::new();
-        Self {
-            db: db,
-            search_results_hashes: &SEARCH_RESULTS_HASHES,
-        }
-    }
-
-    pub fn db(&self) -> TagMaidDatabase {
-        self.db.clone()
-    }
-}
-
-pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UseState<UIData>) -> Element<'a> {
+pub fn render(cx: Scope) -> Element {
     cx.render(rsx! {
         Router {
             header {
                 crate::ui::tabs::render {}
             }
-            Route { to: "/search", crate::ui::tabs::search_tab::render(cx, ui_data.get()) {} }
-            Route { to: "/results", crate::ui::tabs::results_tab::render(cx, ui_data.get()) {} }
+            Route { to: "/search", crate::ui::tabs::search_tab::render(cx) {} }
+            Route { to: "/results", crate::ui::tabs::results_tab::render(cx) {} }
             Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
             Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
 

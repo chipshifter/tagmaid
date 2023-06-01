@@ -1,9 +1,8 @@
-use crate::ui::ui_new::UIData;
 use crate::TagFile;
 use dioxus::prelude::*;
 use std::collections::HashSet;
 
-pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
+pub fn render<'a>(cx: &'a ScopeState) -> Element<'a> {
     let results = use_ref(cx, im_rc::Vector::<TagFile>::default);
 
     cx.render(rsx! {

@@ -25,12 +25,10 @@ It does the following in order:
  - Loads [`Config`](crate::data::config)
  - Launches [`app_main`](crate::app_main) which creates and opens the egui UI.
 */
-
 fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
-    static DB: Lazy<TagMaidDatabase> = Lazy::new(|| crate::database::tagmaid_database::init());
     #[cfg(feature = "import_samples")]
     import_samples(&DB)?;
 
@@ -40,24 +38,46 @@ fn main() -> Result<()> {
     manual_db(&DB)?;
 
     if FeatureFlags::DIOXUS_UI {
-        dioxus_desktop::launch_with_props(
-            app,
-            crate::ui::ui_new::UIData::new(&DB),
-            dioxus_desktop::Config::default(),
-        );
+        dioxus_desktop::launch(app);
     }
 
     let cfg = Config::load();
-    app_main(DB.clone(), cfg)?;
+    //app_main(DB.clone(), cfg)?;
     Ok(())
 }
 
+
+#[derive(Clone)]
+pub struct UIData {
+    pub db: TagMaidDatabase,
+    pub search_results_hashes: Vec<Vec<u8>>,
+}
+
+impl UIData {
+    pub fn new(db: TagMaidDatabase) -> Self {
+        Self {
+            db: db,
+            search_results_hashes: Vec::new(),
+        }
+    }
+
+    pub fn db(&self) -> TagMaidDatabase {
+        self.db.clone()
+    }
+
+    pub fn update_result(&mut self, new_vector: Vec<Vec<u8>>) {
+        self.search_results_hashes = new_vector;
+    }
+}
+
 /// dioxus
-fn app(cx: Scope<crate::ui::ui_new::UIData>) -> Element {
-    let ui_data = use_state(cx, || *cx.props);
+fn app(cx: Scope) -> Element {
+    // TODO : change the db thing
+    let db: TagMaidDatabase = crate::database::tagmaid_database::init();
+    use_shared_state_provider(cx, || UIData::new(db));    
     cx.render(rsx! {
         style { include_str!("ui/style.css") }
-        crate::ui::ui_new::render(cx, ui_data) {}
+        crate::ui::ui_new::render {}
     })
 }
 

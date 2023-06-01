@@ -1,5 +1,5 @@
-use crate::ui::ui_new::UIData;
-use crate::ui::Search;
+use crate::UIData;
+use crate::ui::{Search, TagMaid};
 use crate::TagMaidDatabase;
 
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
@@ -7,7 +7,8 @@ use std::collections::HashSet;
 
 use anyhow::{bail, Context, Result};
 
-pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
+pub fn render<'a>(cx: &'a ScopeState) -> Element<'a> {
+    let ui_data = use_shared_state::<UIData>(cx).unwrap();
     let draft = use_ref(cx, String::new);
 
     cx.render(rsx! {
@@ -20,22 +21,40 @@ pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
                 if event.key() == Key::Enter && !draft.read().is_empty() {
                     // Do search
                     println!("Query entered: {}", &draft.read());
-                    println!("all file hashes: {:?}", ui_data.db().get_all_file_hashes());
+                    println!("all file hashes: {:?}", ui_data.read().db().get_all_file_hashes());
                 }
             }
         }
         button {
             onclick: move |_| {
                 // Do search
-                do_search(&draft.read(), &ui_data).ok();
+                let results_vec = do_search(&draft.read(), ui_data.read().db()).ok();
+                match results_vec {
+                    Some(results) => {
+                        ui_data.write().search_results_hashes.clear();
+                        // dumb
+                        for result in results {
+                            ui_data.write().search_results_hashes.push(result);
+                        }
+                    },
+                    None => {
+                        println!("Something bad happened idk");
+                    }
+                }
             },
             "click"
+        }
+        button {
+            onclick: move |_| {
+                // Do search
+                println!("{:?}", ui_data.read().search_results_hashes);
+            },
+            "print uidata"
         }
     })
 }
 
-pub fn do_search(query: &str, ui_data: &UIData) -> Result<()> {
-    let db = ui_data.db();
+pub fn do_search(query: &str, db: TagMaidDatabase) -> Result<Vec<Vec<u8>>> {
     match Search::from_string(query) {
         Ok(query_vector) => {
             // v : search query vector
@@ -52,12 +71,9 @@ pub fn do_search(query: &str, ui_data: &UIData) -> Result<()> {
                 }
             });
 
-            let mut results_vec: Vec<Vec<u8>> = cands.into_iter().collect();
-            if !results_vec.is_empty() {
-                ui_data.search_results_hashes.clear();
-                ui_data.search_results_hashes.append(&mut results_vec);
-            }
-            Ok(())
+            let results_vec: Vec<Vec<u8>> = cands.into_iter().collect();
+            
+            Ok(results_vec)
         }
         Err(e) => {
             bail!("NO")
