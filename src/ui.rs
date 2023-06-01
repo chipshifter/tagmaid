@@ -1,5 +1,8 @@
 pub mod search_tab;
+pub mod ui_new;
 pub mod tabs;
+pub mod components;
+
 use anyhow::{bail, Context, Result};
 use egui::{
     epaint::text::TextWrapping,

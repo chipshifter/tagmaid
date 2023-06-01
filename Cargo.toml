@@ -25,6 +25,8 @@ log = "0.4"
 dioxus = "0.3.2"
 dioxus-desktop = "0.3.0"
 dioxus-router = "0.3.0"
+im-rc = "15.1.0"
+once_cell = "1.17.2"
 
 
 [features]

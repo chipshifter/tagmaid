@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 /// (if any present in the database) and a `File` instance for other file operations.
 ///
 /// TagFiles are initialised with [`initialise_from_path`](TagFile::initialise_from_path).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TagFile {
     pub path: PathBuf,
     pub file_name: String,

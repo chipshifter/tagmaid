@@ -12,7 +12,7 @@ use image::EncodableLayout;
 extern crate log;
 
 use dioxus::prelude::*;
-use dioxus_router::{Redirect, Route, Router};
+use once_cell::sync::Lazy;
 
 /** The main function.
 
@@ -25,11 +25,12 @@ It does the following in order:
  - Loads [`Config`](crate::data::config)
  - Launches [`app_main`](crate::app_main) which creates and opens the egui UI.
 */
+
 fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
-    let db: TagMaidDatabase = crate::database::tagmaid_database::init();
+    static db: Lazy<TagMaidDatabase> = Lazy::new(|| crate::database::tagmaid_database::init());
     #[cfg(feature = "import_samples")]
     import_samples(&db)?;
 
@@ -39,8 +40,7 @@ fn main() -> Result<()> {
     manual_db(&db)?;
 
     if FeatureFlags::DIOXUS_UI {
-        dioxus_desktop::launch(app);
-    }
+        dioxus_desktop::launch_with_props(app, crate::ui::ui_new::UIData::new(&db), dioxus_desktop::Config::default());    }
 
     let cfg = Config::load();
     app_main(db.clone(), cfg)?;
@@ -48,20 +48,11 @@ fn main() -> Result<()> {
 }
 
 /// dioxus
-fn app(cx: Scope) -> Element {
+fn app(cx: Scope<crate::ui::ui_new::UIData>) -> Element {
+    let mut ui_data = use_state(cx, || *cx.props);
     cx.render(rsx! {
-        style { include_str!("../src/ui/style.css") }
-        Router {
-            header {
-                crate::ui::tabs::render {}
-            }
-            Route { to: "/search", crate::ui::tabs::search_tab::render {} }
-            Route { to: "/results", crate::ui::tabs::results_tab::render {} }
-            Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
-            Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
-
-            Redirect { from: "", to: "/search" }
-        }
+        style { include_str!("ui/style.css") }
+        crate::ui::ui_new::render(cx, ui_data) {}
     })
 }
 
