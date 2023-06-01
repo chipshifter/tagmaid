@@ -15,7 +15,6 @@
 //! - `thumbnails_cache`: Caches the thumbnails textures ([TextureHandle](`egui::TextureHandle`)) of a given
 //! texture label ([TextureLabel](crate::ui::TextureLabel))
 use crate::data::{search_command::Search, tag_info::TagInfo};
-use crate::ui::TextureLabel;
 use crate::TagFile;
 use anyhow::{bail, Result};
 use std::collections::HashMap;
@@ -25,7 +24,7 @@ pub struct TagMaidCache {
     tagfile_cache: RwLock<HashMap<Vec<u8>, TagFile>>,
     tag_cache: RwLock<HashMap<String, TagInfo>>,
     results_cache: RwLock<HashMap<Search, Vec<Vec<u8>>>>,
-    thumbnails_cache: RwLock<HashMap<TextureLabel, egui::TextureHandle>>,
+    //thumbnails_cache: RwLock<HashMap<TextureLabel, egui::TextureHandle>>,
 }
 
 impl TagMaidCache {
@@ -35,7 +34,7 @@ impl TagMaidCache {
             tagfile_cache: RwLock::new(HashMap::new()),
             tag_cache: RwLock::new(HashMap::new()),
             results_cache: RwLock::new(HashMap::new()),
-            thumbnails_cache: RwLock::new(HashMap::new()),
+            //thumbnails_cache: RwLock::new(HashMap::new()),
         };
     }
 
@@ -108,24 +107,24 @@ impl TagMaidCache {
 
     // Thumbnails cache
 
-    pub fn cache_thumbnail(&self, label: TextureLabel, texture: egui::TextureHandle) -> Result<()> {
-        match self.thumbnails_cache.try_write() {
-            Ok(mut cache) => {
-                cache.insert(label, texture);
-                return Ok(());
-            }
-            Err(err) => {
-                bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}");
-            }
-        }
-    }
+    // pub fn cache_thumbnail(&self, label: TextureLabel, texture: egui::TextureHandle) -> Result<()> {
+    //     match self.thumbnails_cache.try_write() {
+    //         Ok(mut cache) => {
+    //             cache.insert(label, texture);
+    //             return Ok(());
+    //         }
+    //         Err(err) => {
+    //             bail!("Couldn't write to thumbnail cache to cache thumbnail texture: {err}");
+    //         }
+    //     }
+    // }
 
-    pub fn get_thumbnail(&self, label: &TextureLabel) -> Option<egui::TextureHandle> {
-        match self.thumbnails_cache.try_read() {
-            Ok(cache) => cache.get(label).cloned(),
-            Err(_err) => None,
-        }
-    }
+    // pub fn get_thumbnail(&self, label: &TextureLabel) -> Option<egui::TextureHandle> {
+    //     match self.thumbnails_cache.try_read() {
+    //         Ok(cache) => cache.get(label).cloned(),
+    //         Err(_err) => None,
+    //     }
+    // }
 
     // Tag Cache
 

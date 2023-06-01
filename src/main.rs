@@ -41,8 +41,7 @@ fn main() -> Result<()> {
         dioxus_desktop::launch(app);
     }
 
-    let cfg = Config::load();
-    //app_main(DB.clone(), cfg)?;
+    //let cfg = Config::load();
     Ok(())
 }
 
@@ -77,35 +76,8 @@ fn app(cx: Scope) -> Element {
     use_shared_state_provider(cx, || UIData::new(db));    
     cx.render(rsx! {
         style { include_str!("ui/style.css") }
-        crate::ui::ui_new::render {}
+        crate::ui::render {}
     })
-}
-
-/// egui initialisation function
-fn app_main(db: TagMaidDatabase, config: data::config::Config) -> Result<()> {
-    let mut frame_options = eframe::NativeOptions::default();
-    frame_options.drag_and_drop_support = true;
-    frame_options.resizable = false;
-    frame_options.initial_window_size = Some(egui::Vec2::new(800.0, 500.0));
-    frame_options.default_theme = config.theme.egui_theme().unwrap();
-
-    // Code for window png logo
-    let dcode = image::open("logo.png")?;
-    let size = (dcode.width(), dcode.height());
-    let out = dcode.as_rgba8().unwrap().as_bytes();
-    frame_options.icon_data = Some(eframe::IconData {
-        width: size.0,
-        height: size.1,
-        rgba: out.to_owned(),
-    });
-
-    eframe::run_native(
-        "Tag Maid",
-        frame_options,
-        Box::new(|cc| Box::new(ui::TagMaid::new(cc, db, config))),
-    )
-    .unwrap();
-    Ok(())
 }
 
 #[cfg(feature = "import_samples")]

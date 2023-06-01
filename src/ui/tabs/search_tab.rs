@@ -1,6 +1,6 @@
 use crate::UIData;
-use crate::ui::{Search, TagMaid};
 use crate::TagMaidDatabase;
+use crate::data::search_command::Search;
 
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use std::collections::HashSet;
