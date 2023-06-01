@@ -9,7 +9,7 @@ pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
     cx.render(rsx! {
         h1 { "Results" }
         div {
-            results.read().iter().map(|id| rsx!(crate::ui::components::resultFileComponent::render { }))
+            results.read().iter().map(|id| rsx!(crate::ui::components::result_file_component::render { }))
         }
     })
 }

@@ -30,31 +30,31 @@ fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
-    static db: Lazy<TagMaidDatabase> = Lazy::new(|| crate::database::tagmaid_database::init());
+    static DB: Lazy<TagMaidDatabase> = Lazy::new(|| crate::database::tagmaid_database::init());
     #[cfg(feature = "import_samples")]
-    import_samples(&db)?;
+    import_samples(&DB)?;
 
     // Used for manual database configuration
     // change the code as you see fit (for dev purposes)
     #[cfg(feature = "manual")]
-    manual_db(&db)?;
+    manual_db(&DB)?;
 
     if FeatureFlags::DIOXUS_UI {
         dioxus_desktop::launch_with_props(
             app,
-            crate::ui::ui_new::UIData::new(&db),
+            crate::ui::ui_new::UIData::new(&DB),
             dioxus_desktop::Config::default(),
         );
     }
 
     let cfg = Config::load();
-    app_main(db.clone(), cfg)?;
+    app_main(DB.clone(), cfg)?;
     Ok(())
 }
 
 /// dioxus
 fn app(cx: Scope<crate::ui::ui_new::UIData>) -> Element {
-    let mut ui_data = use_state(cx, || *cx.props);
+    let ui_data = use_state(cx, || *cx.props);
     cx.render(rsx! {
         style { include_str!("ui/style.css") }
         crate::ui::ui_new::render(cx, ui_data) {}

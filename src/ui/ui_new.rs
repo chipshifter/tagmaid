@@ -5,11 +5,16 @@ use dioxus_router::{Redirect, Route, Router};
 #[derive(Copy, Clone)]
 pub struct UIData {
     pub db: &'static TagMaidDatabase,
+    pub search_results_hashes: &'static Vec<Vec<u8>>,
 }
 
 impl UIData {
     pub fn new(db: &'static TagMaidDatabase) -> Self {
-        Self { db: db }
+        static SEARCH_RESULTS_HASHES: Vec<Vec<u8>> = Vec::new();
+        Self {
+            db: db,
+            search_results_hashes: &SEARCH_RESULTS_HASHES,
+        }
     }
 
     pub fn db(&self) -> TagMaidDatabase {

@@ -1,4 +1,6 @@
-pub mod search_input;
+//! EGUI SEARCH TAB
+//! (EXPERIMENTAL TAB)
+pub mod search_input; 
 
 pub struct SearchUIData {
     search_field_text: String,

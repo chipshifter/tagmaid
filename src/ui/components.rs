@@ -1,1 +1,1 @@
-pub mod resultFileComponent;
+pub mod result_file_component;
