@@ -1,7 +1,7 @@
-pub mod search_tab;
-pub mod ui_new;
-pub mod tabs;
 pub mod components;
+pub mod search_tab;
+pub mod tabs;
+pub mod ui_new;
 
 use anyhow::{bail, Context, Result};
 use egui::{

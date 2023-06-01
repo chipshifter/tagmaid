@@ -1,6 +1,6 @@
-use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use crate::ui::Search;
 use crate::ui::ui_new::UIData;
+use crate::ui::Search;
+use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 
 pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
     let draft = use_ref(cx, String::new);
@@ -21,7 +21,7 @@ pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UIData) -> Element<'a> {
         }
         button {
             onclick: move |_| {
-                // Do search 
+                // Do search
             },
             "click"
         }
@@ -32,7 +32,6 @@ pub fn do_search(query: &str) {
     match Search::from_string(query) {
         Ok(v) => {
             // v : search query vector
-
         }
         Err(e) => {}
     }

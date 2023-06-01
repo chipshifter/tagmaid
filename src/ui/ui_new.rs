@@ -1,6 +1,6 @@
+use crate::{TagFile, TagMaidDatabase};
 use dioxus::prelude::*;
 use dioxus_router::{Redirect, Route, Router};
-use crate::{TagFile, TagMaidDatabase};
 
 #[derive(Copy, Clone)]
 pub struct UIData {
@@ -9,16 +9,13 @@ pub struct UIData {
 
 impl UIData {
     pub fn new(db: &'static TagMaidDatabase) -> Self {
-        Self {
-            db: db
-        }
+        Self { db: db }
     }
 
     pub fn db(&self) -> TagMaidDatabase {
         self.db.clone()
     }
 }
-
 
 pub fn render<'a>(cx: &'a ScopeState, ui_data: &'a UseState<UIData>) -> Element<'a> {
     cx.render(rsx! {

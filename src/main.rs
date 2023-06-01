@@ -1,11 +1,11 @@
 #![allow(dead_code, unused_imports)]
 pub mod data;
 pub mod database;
-pub mod ui;
 pub mod feature_flags;
-use crate::feature_flags::FeatureFlags;
+pub mod ui;
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
+use crate::feature_flags::FeatureFlags;
 use anyhow::{bail, Context, Result};
 use image::EncodableLayout;
 #[macro_use]
@@ -40,7 +40,12 @@ fn main() -> Result<()> {
     manual_db(&db)?;
 
     if FeatureFlags::DIOXUS_UI {
-        dioxus_desktop::launch_with_props(app, crate::ui::ui_new::UIData::new(&db), dioxus_desktop::Config::default());    }
+        dioxus_desktop::launch_with_props(
+            app,
+            crate::ui::ui_new::UIData::new(&db),
+            dioxus_desktop::Config::default(),
+        );
+    }
 
     let cfg = Config::load();
     app_main(db.clone(), cfg)?;
