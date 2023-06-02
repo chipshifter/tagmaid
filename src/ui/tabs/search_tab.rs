@@ -1,7 +1,7 @@
-use crate::UIData;
-use crate::TagMaidDatabase;
 use crate::data::search_command::Search;
 use crate::get_ui_data;
+use crate::TagMaidDatabase;
+use crate::UIData;
 
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_router::{Redirect, Router};
@@ -19,8 +19,8 @@ pub fn render(cx: Scope) -> Element {
             let results_vec = do_search(&draft.read(), ui_data.read().db()).ok();
             match results_vec {
                 Some(results) => {
-                    ui_data.write().update_search_results(results); 
-                },
+                    ui_data.write().update_search_results(results);
+                }
                 None => {}
             }
             // Redirect to results
@@ -69,11 +69,11 @@ pub fn do_search(query: &str, db: TagMaidDatabase) -> Result<Vec<Vec<u8>>> {
             });
 
             let results_vec: Vec<Vec<u8>> = cands.into_iter().collect();
-            
+
             Ok(results_vec)
         }
         Err(e) => {
-            bail!("NO")
+            bail!(e)
         }
     }
 }

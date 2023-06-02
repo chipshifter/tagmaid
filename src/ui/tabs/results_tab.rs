@@ -1,6 +1,6 @@
+use crate::get_ui_data;
 use crate::TagFile;
 use crate::UIData;
-use crate::get_ui_data;
 use dioxus::prelude::*;
 use std::collections::HashSet;
 
@@ -12,7 +12,7 @@ pub fn render(cx: Scope) -> Element {
         let tf_option = ui_data.read().db().get_tagfile_from_hash(&result).ok();
         if tf_option.is_some() {
             let tf: TagFile = tf_option.unwrap();
-            rsx!(ResultComponent { tagfile: tf })
+            rsx!(result_div_component { tagfile: tf })
         } else {
             rsx!(h3 { "no "})
         }
@@ -24,7 +24,7 @@ pub fn render(cx: Scope) -> Element {
 }
 
 #[inline_props]
-fn ResultComponent(cx: Scope, tagfile: TagFile) -> Element {
+fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
     cx.render(rsx! {
         style { include_str!("../css/result_file_component.css") }
         div {
@@ -33,4 +33,3 @@ fn ResultComponent(cx: Scope, tagfile: TagFile) -> Element {
         }
     })
 }
-

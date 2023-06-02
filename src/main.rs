@@ -45,7 +45,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-
 #[derive(Clone)]
 pub struct UIData {
     pub db: TagMaidDatabase,
@@ -81,7 +80,7 @@ fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
 fn app(cx: Scope) -> Element {
     // TODO : change the db thing
     let db: TagMaidDatabase = crate::database::tagmaid_database::init();
-    use_shared_state_provider(cx, || UIData::new(db));    
+    use_shared_state_provider(cx, || UIData::new(db));
     cx.render(rsx! {
         style { include_str!("ui/style.css") }
         crate::ui::render {}
