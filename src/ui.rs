@@ -1,5 +1,4 @@
 pub mod tabs;
-pub mod components;
 
 use crate::{TagFile, TagMaidDatabase};
 use dioxus::prelude::*;
@@ -11,12 +10,14 @@ pub fn render(cx: Scope) -> Element {
             header {
                 crate::ui::tabs::render {}
             }
-            Route { to: "/search", crate::ui::tabs::search_tab::render(cx) {} }
-            Route { to: "/results", crate::ui::tabs::results_tab::render(cx) {} }
-            Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
-            Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
-
-            Redirect { from: "", to: "/search" }
+            body {
+                Route { to: "/search", crate::ui::tabs::search_tab::render {} }
+                Route { to: "/results", crate::ui::tabs::results_tab::render {} }
+                Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
+                Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
+    
+                Redirect { to: "/search" }
+            }
         }
     })
 }

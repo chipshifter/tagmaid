@@ -64,9 +64,17 @@ impl UIData {
         self.db.clone()
     }
 
-    pub fn update_result(&mut self, new_vector: Vec<Vec<u8>>) {
-        self.search_results_hashes = new_vector;
+    pub fn update_search_results(&mut self, new_vector: Vec<Vec<u8>>) {
+        self.search_results_hashes = new_vector.clone();
     }
+
+    pub fn get_search_results(&self) -> Vec<Vec<u8>> {
+        self.search_results_hashes.clone()
+    }
+}
+
+fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
+    use_shared_state::<crate::UIData>(cx).expect("no").clone()
 }
 
 /// dioxus
