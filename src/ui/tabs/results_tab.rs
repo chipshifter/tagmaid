@@ -28,8 +28,9 @@ fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
     cx.render(rsx! {
         style { include_str!("../css/result_file_component.css") }
         div {
-            span { "{tagfile.get_file_name()}" }
             img { src: "{tagfile.get_thumbnail_path().display()}" }
+            hr {}
+            span { "{tagfile.get_file_name()}" }
         }
     })
 }
