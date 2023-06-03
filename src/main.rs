@@ -12,7 +12,6 @@ use image::EncodableLayout;
 extern crate log;
 
 use dioxus::prelude::*;
-use once_cell::sync::Lazy;
 
 /** The main function.
 

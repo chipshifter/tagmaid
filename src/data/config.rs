@@ -8,13 +8,6 @@ pub enum Theme {
     Ika,
 }
 impl Theme {
-    // returns an option incase we want more themes
-    pub fn egui_theme(&self) -> Option<eframe::Theme> {
-        Some(match self {
-            Self::Ika => eframe::Theme::Light,
-            Self::Nameless => eframe::Theme::Dark,
-        })
-    }
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
