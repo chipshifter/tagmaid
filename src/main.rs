@@ -28,14 +28,6 @@ fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
-    #[cfg(feature = "import_samples")]
-    import_samples(&DB)?;
-
-    // Used for manual database configuration
-    // change the code as you see fit (for dev purposes)
-    #[cfg(feature = "manual")]
-    manual_db(&DB)?;
-
     if FeatureFlags::DIOXUS_UI {
         dioxus_desktop::launch(app);
     }
@@ -79,9 +71,11 @@ fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
 fn app(cx: Scope) -> Element {
     // TODO : change the db thing
     let db: TagMaidDatabase = crate::database::tagmaid_database::init();
+    #[cfg(feature = "import_samples")]
+    import_samples(&db);
     use_shared_state_provider(cx, || UIData::new(db));
     cx.render(rsx! {
-        style { include_str!("ui/style.css") }
+        style { include_str!("ui/css/root.css") }
         crate::ui::render {}
     })
 }

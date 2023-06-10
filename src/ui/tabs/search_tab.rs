@@ -34,8 +34,9 @@ pub fn render(cx: Scope) -> Element {
             autofocus: "true",
             value: "{draft.read()}",
             oninput: move |event| draft.set(event.value.clone()),
-            onkeydown: move |event| {
+            onkeypress: move |event| {
                 if event.key() == Key::Enter && !draft.read().is_empty() {
+                    draft.set(String::new());
                     do_the_search(true);
                 }
             }

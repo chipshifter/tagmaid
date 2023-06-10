@@ -8,17 +8,21 @@ use dioxus_router::Link;
 
 pub fn render(cx: Scope) -> Element {
     cx.render(rsx! {
-        table { class: "tabs",
-            td {
+        ol {
+            li {
+                class: "tab",
                 Link { to: "/search", "Search" }
             }
-            td {
+            li {
+                class: "tab",
                 Link { to: "/results", "Results" }
             }
-            td {
+            li {
+                class: "tab",
                 Link { to: "/add", "Add" }
             }
-            td {
+            li {
+                class: "tab",
                 Link { to: "/settings", "Settings" }
             }
         }

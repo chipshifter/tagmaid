@@ -1,7 +1,8 @@
 use crate::get_ui_data;
 use crate::TagFile;
 use crate::UIData;
-use dioxus::prelude::*;
+use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
+use dioxus_router::Redirect;
 use std::collections::HashSet;
 
 pub fn render(cx: Scope) -> Element {
@@ -14,20 +15,24 @@ pub fn render(cx: Scope) -> Element {
             let tf: TagFile = tf_option.unwrap();
             rsx!(result_div_component { tagfile: tf })
         } else {
-            rsx!(h3 { "no "})
+            rsx!(h1 { "nay got none"})
         }
     });
 
     cx.render(rsx! {
-        results_rendered
+        style { include_str!("../css/result_file_component.css") }
+        div {
+            class: "result_page",
+            results_rendered
+        }
     })
 }
 
 #[inline_props]
 fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
     cx.render(rsx! {
-        style { include_str!("../css/result_file_component.css") }
         div {
+            class: "result",
             img { src: "{tagfile.get_thumbnail_path().display()}" }
             hr {}
             span { "{tagfile.get_file_name()}" }

@@ -1,11 +1,30 @@
-div {
-    width: 100px;
-    height: 100px;
+div .result_page {
     display: flex;
+    align-items: stretch;
+    align-content: space-around;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: space-evenly;
+}
+
+div .result {
+    border: 2px solid var(--outline);
+    padding: 16px;
+    width: 192px;
+    height: 192px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    flex-direction: row;
+}
+
+img {
+    width: 160px;
+    max-height: 150px;
 }
 
 span {
-    font-family: 'Courier New', monospace;
+    color: var(--text);
+    font-family: monospace;
+    text-overflow: fade;
 }
