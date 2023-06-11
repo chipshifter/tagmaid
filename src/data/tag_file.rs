@@ -34,6 +34,17 @@ impl TagFile {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        if self.path == PathBuf::new()
+        && self.file_name.is_empty()
+        && self.file_hash.is_empty()
+        && self.tags.is_empty() {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /// Initialises a TagFile from a given file's path. The file has to exist and be accessible,
     /// since it is opened for the `self.file` attribute, and hashed for the `self.file_hash` attribute.
     ///

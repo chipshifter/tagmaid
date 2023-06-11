@@ -63,6 +63,9 @@ impl UIData {
     }
 }
 
+
+pub struct UITagmaidDatabase(TagMaidDatabase);
+
 fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
     use_shared_state::<crate::UIData>(cx).expect("no").clone()
 }
@@ -73,7 +76,12 @@ fn app(cx: Scope) -> Element {
     let db: TagMaidDatabase = crate::database::tagmaid_database::init();
     #[cfg(feature = "import_samples")]
     import_samples(&db);
-    use_shared_state_provider(cx, || UIData::new(db));
+
+    // Shared shate of TagMaidDatabase
+    use_shared_state_provider(cx, || UITagmaidDatabase(db.clone()));
+
+    // TODO: Independent shared states for each little thing
+    use_shared_state_provider(cx, || UIData::new(db.clone()));
     cx.render(rsx! {
         style { include_str!("ui/css/root.css") }
         crate::ui::render {}
@@ -90,7 +98,7 @@ fn import_samples(db: &TagMaidDatabase) -> Result<()> {
             println!("Adding file {} to db", &path_path.display());
             let mut file = TagFile::initialise_from_path(&path_path)?;
             // Hardcoded don't care + ratio + stream Frank Ocean
-            file.add_tag("frank_ocean")?;
+            file.add_tag("frank")?;
             db.update_tagfile(&file)?;
         }
     }

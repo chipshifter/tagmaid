@@ -11,12 +11,9 @@ nav .tabs {
     padding: 16px;
 }
 
-.tab ol {
+.tab {
     margin: 4px;
     list-style-type: none;
-}
-
-.tab {
     display: inline-block;
 }
 

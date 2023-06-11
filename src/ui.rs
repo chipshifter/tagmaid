@@ -1,6 +1,8 @@
 pub mod tabs;
 
-use crate::{TagFile, TagMaidDatabase};
+use std::borrow::BorrowMut;
+
+use crate::{TagFile, TagMaidDatabase, UITagmaidDatabase};
 use dioxus::{prelude::*, html::input_data::keyboard_types::Key};
 use dioxus_router::{Redirect, Route, Router};
 
@@ -21,4 +23,15 @@ pub fn render(cx: Scope) -> Element {
             }
         }
     })
+}
+
+/// Acquires a shared state of the TagMaidDatabase instance initialised in main
+/// Note that you don't need to use write() as there is only one TagMaidDatabase instance
+/// which can be modified internally
+fn get_tagmaiddatabase(cx: &ScopeState) -> Option<TagMaidDatabase> {
+    match use_shared_state::<UITagmaidDatabase>(cx) {
+        // TagMaidDatabase can be cloned cheaply
+        Some(db) => Some(db.read().0.clone()),
+        None => None
+    }
 }
