@@ -97,8 +97,7 @@ fn import_samples(db: &TagMaidDatabase) -> Result<()> {
         if (&path.unwrap().metadata().unwrap().is_file()).to_owned() {
             println!("Adding file {} to db", &path_path.display());
             let mut file = TagFile::initialise_from_path(&path_path)?;
-            // Hardcoded don't care + ratio + stream Frank Ocean
-            file.add_tag("frank")?;
+            file.add_tag("test")?;
             db.update_tagfile(&file)?;
         }
     }
