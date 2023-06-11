@@ -63,7 +63,7 @@ impl UIData {
     }
 }
 
-
+#[derive(Clone)]
 pub struct UITagmaidDatabase(TagMaidDatabase);
 
 fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {

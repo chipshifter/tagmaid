@@ -10,8 +10,13 @@ pub fn render(cx: Scope) -> Element {
     let ui_data = get_ui_data(cx);
     let results = ui_data.read().get_search_results();
     let results_rendered = results.iter().map(|result| {
-        let tf_option = get_tagmaiddatabase(cx).unwrap().get_tagfile_from_hash(&result).ok();
-        rsx!(result_div_component { tagfile: tf_option.unwrap_or(TagFile::new()) })
+        let tf_option = get_tagmaiddatabase(cx)
+            .unwrap()
+            .get_tagfile_from_hash(&result)
+            .ok();
+        rsx!(result_div_component {
+            tagfile: tf_option.unwrap_or(TagFile::new())
+        })
     });
 
     cx.render(rsx! {
@@ -26,6 +31,7 @@ pub fn render(cx: Scope) -> Element {
 #[inline_props]
 fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
     if tagfile.is_empty() {
+        println!("surely not");
         return None;
     }
     cx.render(rsx! {
@@ -33,7 +39,7 @@ fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
             class: "result",
             img {
                 onclick: move |_event| println!("click"),
-                src: "{tagfile.get_thumbnail_path().display()}" 
+                src: "{tagfile.get_thumbnail_path().display()}"
             }
             hr {}
             span { "{tagfile.get_file_name()}" }

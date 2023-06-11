@@ -7,8 +7,7 @@ pub enum Theme {
     Nameless,
     Ika,
 }
-impl Theme {
-}
+impl Theme {}
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConfigFs {

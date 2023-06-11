@@ -1,26 +1,21 @@
 pub mod tabs;
 
-use std::borrow::BorrowMut;
-
 use crate::{TagFile, TagMaidDatabase, UITagmaidDatabase};
-use dioxus::{prelude::*, html::input_data::keyboard_types::Key};
-use dioxus_router::{Redirect, Route, Router};
+use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
+use dioxus_router::{Link, Redirect, Route, Router};
 
 pub fn render(cx: Scope) -> Element {
     cx.render(rsx! {
         Router {
-            nav { 
+            nav {
                 class: "tabs",
-                crate::ui::tabs::render {}
+                tabs::render {}
             }
-            main {
-                Route { to: "/search", crate::ui::tabs::search_tab::render {} }
-                Route { to: "/results", crate::ui::tabs::results_tab::render {} }
-                Route { to: "/add", crate::ui::tabs::add_file_tab::render {} }
-                Route { to: "/settings", crate::ui::tabs::settings_tab::render {} }
-
-                Redirect { to: "/search" }
-            }
+            Route { to: "/", Redirect { to: "/search" } },
+            Route { to: "/search", tabs::search_tab::render {} },
+            Route { to: "/results", tabs::results_tab::render {} },
+            Route { to: "/add", tabs::add_file_tab::render {} },
+            Route { to: "/settings", tabs::settings_tab::render {} },
         }
     })
 }
@@ -32,6 +27,6 @@ fn get_tagmaiddatabase(cx: &ScopeState) -> Option<TagMaidDatabase> {
     match use_shared_state::<UITagmaidDatabase>(cx) {
         // TagMaidDatabase can be cloned cheaply
         Some(db) => Some(db.read().0.clone()),
-        None => None
+        None => None,
     }
 }

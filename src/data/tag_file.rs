@@ -36,9 +36,10 @@ impl TagFile {
 
     pub fn is_empty(&self) -> bool {
         if self.path == PathBuf::new()
-        && self.file_name.is_empty()
-        && self.file_hash.is_empty()
-        && self.tags.is_empty() {
+            && self.file_name.is_empty()
+            && self.file_hash.is_empty()
+            && self.tags.is_empty()
+        {
             return true;
         } else {
             return false;

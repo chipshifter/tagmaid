@@ -12,7 +12,7 @@ use anyhow::{bail, Context, Result};
 pub fn render(cx: Scope) -> Element {
     let draft = use_ref(cx, String::new);
     let redirect = use_ref(cx, || false);
-
+    
     let do_the_search = || {
         let ui_data = get_ui_data(cx);
         let results_vec = do_search(&draft.read(), ui_data.read().db()).ok();
@@ -34,17 +34,12 @@ pub fn render(cx: Scope) -> Element {
             oninput: move |event| draft.set(event.value.clone()),
             onkeypress: move |event| {
                 if event.key() == Key::Enter && !draft.read().is_empty() {
-                    event.stop_propagation();
-                    draft.set(String::new());
                     do_the_search()
                 }
             }
         }
         button {
-            onclick: move |event| {
-                event.stop_propagation();
-                do_the_search()
-            },
+            onclick: move |_| do_the_search(),
             "Search"
         }
 
