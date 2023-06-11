@@ -31,14 +31,12 @@ pub fn render(cx: Scope) -> Element {
 #[inline_props]
 fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
     if tagfile.is_empty() {
-        println!("surely not");
         return None;
     }
     cx.render(rsx! {
         div {
             class: "result",
             img {
-                onclick: move |_event| println!("click"),
                 src: "{tagfile.get_thumbnail_path().display()}"
             }
             hr {}
