@@ -2,7 +2,6 @@
 pub mod data;
 pub mod database;
 pub mod feature_flags;
-pub mod ui;
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use crate::feature_flags::FeatureFlags;
@@ -11,7 +10,10 @@ use image::EncodableLayout;
 #[macro_use]
 extern crate log;
 
-use dioxus::prelude::*;
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
 
 /** The main function.
 
@@ -24,16 +26,16 @@ It does the following in order:
  - Loads [`Config`](crate::data::config)
  - Launches [`app_main`](crate::app_main) which creates and opens the egui UI.
 */
-fn main() -> Result<()> {
+fn main() {
     env_logger::init();
-    info!("Starting up TagMaid. Hello!");
+    log::info!("Starting up TagMaid. Hello!");
 
-    if FeatureFlags::DIOXUS_UI {
-        dioxus_desktop::launch(app);
-    }
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![greet])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 
     //let cfg = Config::load();
-    Ok(())
 }
 
 #[derive(Clone)]
@@ -61,31 +63,6 @@ impl UIData {
     pub fn get_search_results(&self) -> Vec<Vec<u8>> {
         self.search_results_hashes.clone()
     }
-}
-
-#[derive(Clone)]
-pub struct UITagmaidDatabase(TagMaidDatabase);
-
-fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
-    use_shared_state::<crate::UIData>(cx).expect("no").clone()
-}
-
-/// dioxus
-fn app(cx: Scope) -> Element {
-    // TODO : change the db thing
-    let db: TagMaidDatabase = crate::database::tagmaid_database::init();
-    #[cfg(feature = "import_samples")]
-    import_samples(&db);
-
-    // Shared shate of TagMaidDatabase
-    use_shared_state_provider(cx, || UITagmaidDatabase(db.clone()));
-
-    // TODO: Independent shared states for each little thing
-    use_shared_state_provider(cx, || UIData::new(db.clone()));
-    cx.render(rsx! {
-        style { include_str!("ui/css/root.css") }
-        crate::ui::render {}
-    })
 }
 
 #[cfg(feature = "import_samples")]
