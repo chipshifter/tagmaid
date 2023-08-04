@@ -1,41 +1,41 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Search.css";
 
-function SearchForm() {
-    const [searchText, setSearchText] = useState("");
-    const [loadingString, setLoadingString] = useState("");
+export function SearchTab({ searchState, updateSearch }) {
+    const [searchText, setSearchText] = useState(searchState.searchQuery);
+    const [errorString, setErrorString] = useState("");
+    // When search is done, redirect to results page
+    const navigate = useNavigate();
+
     const submitSearch = useCallback(async () => {
-        console.log("Hiii");
-        setLoadingString("Searching...");
+        searchState.setSearchQuery(searchText);
         await invoke("do_search", { query: searchText })
-            .then((res) => { 
+            .then((res) => {
                 // Search OK
                 console.log(res)
-                setLoadingString("Search success: " + res);
+                updateSearch(res)
+                navigate("/results");
             })
             .catch((error) => {
-                setLoadingString("Error: " + error);
+                setErrorString("Error: " + error)
                 console.error(error)
             });
-    }, [searchText, setLoadingString])
+    }, [searchText, errorString, setErrorString, navigate, updateSearch])
 
     return (
-        <form onSubmit={(e) => {
-            e.preventDefault()
-            submitSearch();
-        }}>
-            <input type="text" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
-            <input type="submit" value="Submit" />
-            <h1>{loadingString}</h1>
-        </form>
-    );
-}
-
-export function SearchTab() {
-    return (
-        <>
-            <span>Hiii welcome to Search tab</span>
-            <SearchForm />
-        </>
+        <div className="searchPage">
+            <h1>Search</h1>
+            <form onSubmit={(e) => {
+                e.preventDefault()
+                submitSearch();
+            }}>
+                <input type="text" className="searchField" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+                <input type="submit" className="searchButton" value="Submit" />
+                <br />
+                <h3 color="red">{errorString}</h3>
+            </form>
+        </div>
     )
 }

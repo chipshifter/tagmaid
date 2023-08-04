@@ -1,0 +1,26 @@
+.searchPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    justify-content: start;
+    height: calc(95vh - 120px);
+    width: 100%;
+}
+
+form { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+form input {
+    margin: 16px;
+}
+
+form input[type=text] {
+    width: 100%;
+    max-width: 600px;
+}

@@ -5,22 +5,16 @@ import {
   Link,
   Routes
 } from "react-router-dom";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import { SearchTab } from "./Search";
-
+import { ResultsTab } from "./Results";
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-
-  async function searchig() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [searchQuery, setSearchQuery] = useState([]);
+  const [searchResultHashes, setSearchResultHashes] = useState([]);
 
   return (
     <Router>
-      <nav className="tabs">
+      <nav className="page tabs">
         <div className="tabs-buttons">
           <Link to="/">Search</Link>
           <Link to="/results">Results</Link>
@@ -28,17 +22,19 @@ function App() {
         </div>
       </nav>
       <hr />
-      <Routes>
-        <Route path="/" element={
-          <SearchTab />
-        } />
-        <Route path="/results" element={
-          <h1>Results</h1>
-        } />
-        <Route path="/add" element={
-          <h1>Add</h1>
-        } />
-      </Routes >
+      <div className="page mainPage">
+        <Routes>
+          <Route path="/" element={
+            <SearchTab searchState={{ searchQuery, setSearchQuery }} updateSearch={setSearchResultHashes} />
+          } />
+          <Route path="/results" element={
+            <ResultsTab searchResultHashes={searchResultHashes} />
+          } />
+          <Route path="/add" element={
+            <h1>Add</h1>
+          } />
+        </Routes >
+      </div>
     </Router >
   );
 }

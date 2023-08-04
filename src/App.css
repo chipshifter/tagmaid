@@ -1,12 +1,17 @@
 .tabs {
-  height: 40px;
+  height: 70px;
 }
 
 .tabs-buttons {
   display: flex;
-  margin-top: 20px;
-  height: 100%;
+  font-size: 28px;
+  margin: 10px;
+  height: 70%;
   align-items: center;
   align-content: center;
   justify-content: space-around;
+}
+
+.mainPage {
+  height: 100%;
 }
