@@ -7,16 +7,33 @@ pub mod tauri_error;
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use crate::feature_flags::FeatureFlags;
+use anyhow::{anyhow, Result};
+use client::results::FileResult;
 use image::EncodableLayout;
 use once_cell::sync::Lazy;
-use tauri_error::{TauriResult, TauriError};
+use tauri_error::{TauriError, TauriResult};
 #[macro_use]
 extern crate log;
 
-// Search commands
+// Search tab
 #[tauri::command]
-fn do_search(query: &str) -> TauriResult<Vec<Vec<u8>>, TauriError> {
-    client::search::do_search(query).map_err(|e| TauriError::Error(e))
+fn do_search(query: &str) -> TauriResult<Vec<String>, TauriError> {
+    // Gotta convert the Vec<Vec<u8>> into Vec<String> for serde purposes
+    let results: Vec<String> =
+        client::search::do_search(query).map_err(|e| TauriError::Error(e))?
+        .iter()
+        .filter_map(|vec| serde_json::to_string(vec).ok())
+        .collect();
+
+    Ok(results)
+}
+
+// Results tab
+#[tauri::command]
+fn get_result(file_hash: &str) -> TauriResult<FileResult, TauriError> {
+    let file_hash_bytes: Vec<u8> =
+        serde_json::from_str(file_hash).map_err(|e| TauriError::Error(anyhow!(e)))?;
+    client::results::FileResult::from_file_hash(&file_hash_bytes).map_err(|e| TauriError::Error(e))
 }
 
 #[tauri::command]
@@ -43,39 +60,15 @@ fn main() {
     env_logger::init();
     log::info!("Starting up TagMaid. Hello!");
 
+    #[cfg(feature = "import_samples")]
+    let _import = import_samples(Lazy::force(&TAGMAID_DATABASE)).unwrap();
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, do_search])
+        .invoke_handler(tauri::generate_handler![do_search, get_result])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
     //let cfg = Config::load();
-}
-
-#[derive(Clone)]
-pub struct UIData {
-    pub db: TagMaidDatabase,
-    pub search_results_hashes: Vec<Vec<u8>>,
-}
-
-impl UIData {
-    pub fn new(db: TagMaidDatabase) -> Self {
-        Self {
-            db: db,
-            search_results_hashes: Vec::new(),
-        }
-    }
-
-    pub fn db(&self) -> TagMaidDatabase {
-        self.db.clone()
-    }
-
-    pub fn update_search_results(&mut self, new_vector: Vec<Vec<u8>>) {
-        self.search_results_hashes = new_vector.clone();
-    }
-
-    pub fn get_search_results(&self) -> Vec<Vec<u8>> {
-        self.search_results_hashes.clone()
-    }
 }
 
 #[cfg(feature = "import_samples")]

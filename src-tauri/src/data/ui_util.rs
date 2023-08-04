@@ -16,8 +16,7 @@ pub fn create_image_thumbnail(path: &PathBuf, max_width: u32, max_height: u32) -
         .unwrap()
         .to_string();
 
-    let mut path_thumbnail = path.clone();
-    path_thumbnail.pop();
+    let mut path_thumbnail: PathBuf = "../public/".into();
     path_thumbnail.push(String::from("thumb_") + &file_name);
     path_thumbnail.set_extension("jpg");
     if !path_thumbnail.exists() {
