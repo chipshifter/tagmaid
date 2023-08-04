@@ -29,8 +29,10 @@
   border-radius: 20px;
 }
 
-hr {
+hr, br {
   color: var(--very-far);
+  border: 2px solid;
+  border-color: var(--very-far);
 }
 .container {
   margin: 0;
