@@ -19,8 +19,8 @@ extern crate log;
 #[tauri::command]
 fn do_search(query: &str) -> TauriResult<Vec<String>, TauriError> {
     // Gotta convert the Vec<Vec<u8>> into Vec<String> for serde purposes
-    let results: Vec<String> =
-        client::search::do_search(query).map_err(|e| TauriError::Error(e))?
+    let results: Vec<String> = client::search::do_search(query)
+        .map_err(|e| TauriError::Error(e))?
         .iter()
         .filter_map(|vec| serde_json::to_string(vec).ok())
         .collect();

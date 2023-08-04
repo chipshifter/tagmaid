@@ -3,11 +3,14 @@ import {
   BrowserRouter as Router,
   Route,
   Link,
-  Routes
+  Routes,
+  useNavigate
 } from "react-router-dom";
 import "./App.css";
 import { SearchForm, SearchTab } from "./Search";
 import { ResultsTab } from "./Results";
+import React from "react";
+
 function App() {
   const [searchQuery, setSearchQuery] = useState([]);
   const [searchResultHashes, setSearchResultHashes] = useState([]);

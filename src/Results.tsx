@@ -5,14 +5,14 @@ import "./Results.css";
 
 function Result(props: { resultHash: string }) {
     const [resultHtml, setResultHtml] = useState(<></>);
-    const result = useMemo(
+    useMemo(
         () => {
             invoke("get_result", { fileHash: props.resultHash })
                 .then((res) => {
                     // Search OK
                     console.log(res)
                     setResultHtml(<button className="resultBlock">
-                        <img src={res.image_path} width={"140"} height={"140"} />
+                        <img src={res.image_path} />
                         <span>{res.file_name}</span>
                     </button>);
                 })
@@ -27,9 +27,9 @@ function Result(props: { resultHash: string }) {
 }
 
 export function ResultsTab(props: { query: string, searchResultHashes: string[] }) {
-    const navigate = useNavigate();
     let results: string[] = props.searchResultHashes;
-    console.log("wawa " + results);
+
+    const navigate = useNavigate();
     // Go back when pressing the Esc key
     React.useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {

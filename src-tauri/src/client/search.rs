@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use crate::{data::search_command::Search, database::tagmaid_database::TagMaidDatabase, TAGMAID_DATABASE};
+use crate::{
+    data::search_command::Search, database::tagmaid_database::TagMaidDatabase, TAGMAID_DATABASE,
+};
 use anyhow::{Context, Result};
 
 pub fn do_search(query: &str) -> Result<Vec<Vec<u8>>> {

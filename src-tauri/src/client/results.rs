@@ -15,7 +15,7 @@ impl FileResult {
         let tf = &TAGMAID_DATABASE
             .get_tagfile_from_hash(file_hash)
             .context("Couldn't find TagFile with specificied file hash")?;
-    
+
         Ok(FileResult {
             image_path: create_image_thumbnail(&tf.path, 100, 100)
                 .into_os_string()

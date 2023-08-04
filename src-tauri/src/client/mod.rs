@@ -1,2 +1,2 @@
-pub mod search;
 pub mod results;
+pub mod search;
