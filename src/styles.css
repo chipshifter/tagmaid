@@ -106,6 +106,8 @@ button {
   outline: none;
 }
 
-#greet-input {
-  margin-right: 5px;
+.errorString {
+  background-color: var(--text);
+  padding: 10px;
+  color: rgb(239, 0, 0);
 }

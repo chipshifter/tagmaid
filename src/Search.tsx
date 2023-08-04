@@ -33,9 +33,9 @@ export function SearchTab({ searchState, updateSearch }) {
             }}>
                 <input type="text" className="searchField" autoFocus={true} value={searchText} onChange={(e) => setSearchText(e.target.value)} />
                 <input type="submit" className="searchButton" value="Submit" />
-                <br />
-                <h3 color="red">{errorString}</h3>
             </form>
+            <br />
+            { errorString.length > 0 ? <h3 className="errorString">{errorString}</h3> : null}
         </div>
     )
 }
