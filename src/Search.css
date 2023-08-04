@@ -4,7 +4,7 @@
     align-items: center;
     align-content: center;
     justify-content: start;
-    height: calc(95vh - 120px);
+    height: 100%;
     width: 100%;
 }
 
