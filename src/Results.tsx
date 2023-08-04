@@ -34,6 +34,7 @@ export function ResultsTab(props: { query: string, searchResultHashes: string[] 
     React.useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
+                event.preventDefault();
                 navigate(-1);
             }
         };

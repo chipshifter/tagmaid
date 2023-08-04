@@ -3,9 +3,8 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Search.css";
 
-export function SearchTab({ searchState, updateSearch }) {
+export function SearchForm({ searchState, updateSearch, setErrorString }) {
     const [searchText, setSearchText] = useState(searchState.searchQuery);
-    const [errorString, setErrorString] = useState("");
     // When search is done, redirect to results page
     const navigate = useNavigate();
 
@@ -22,20 +21,25 @@ export function SearchTab({ searchState, updateSearch }) {
                 setErrorString("Error: " + error)
                 console.error(error)
             });
-    }, [searchText, errorString, setErrorString, navigate, updateSearch])
+    }, [searchText, setErrorString, navigate, updateSearch])
+    return (<form onSubmit={(e) => {
+        e.preventDefault()
+        submitSearch();
+    }}>
+        <input type="text" className="searchField" autoFocus={true} value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+        <input type="submit" className="searchButton" value="Search" />
+    </form>);
+}
+
+export function SearchTab({ searchState, updateSearch }) {
+    const [errorString, setErrorString] = useState("");
 
     return (
         <div className="searchPage">
             <h1>Search</h1>
-            <form onSubmit={(e) => {
-                e.preventDefault()
-                submitSearch();
-            }}>
-                <input type="text" className="searchField" autoFocus={true} value={searchText} onChange={(e) => setSearchText(e.target.value)} />
-                <input type="submit" className="searchButton" value="Submit" />
-            </form>
+            <SearchForm searchState={searchState} updateSearch={updateSearch} setErrorString={setErrorString} />
             <br />
-            { errorString.length > 0 ? <h3 className="errorString">{errorString}</h3> : null}
+            {errorString.length > 0 ? <h3 className="errorString">{errorString}</h3> : null}
         </div>
     )
 }

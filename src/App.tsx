@@ -6,7 +6,7 @@ import {
   Routes
 } from "react-router-dom";
 import "./App.css";
-import { SearchTab } from "./Search";
+import { SearchForm, SearchTab } from "./Search";
 import { ResultsTab } from "./Results";
 function App() {
   const [searchQuery, setSearchQuery] = useState([]);
@@ -14,27 +14,36 @@ function App() {
 
   return (
     <Router>
-      <nav className="page tabs">
-        <div className="tabs-buttons">
-          <Link to="/">Search</Link>
-          <Link to="/results">Results</Link>
-          <Link to="/add">Add</Link>
-        </div>
-      </nav>
-      <hr />
-      <div className="page mainPage">
-        <Routes>
-          <Route path="/" element={
-            <SearchTab searchState={{ searchQuery, setSearchQuery }} updateSearch={setSearchResultHashes} />
-          } />
-          <Route path="/results" element={
-            <ResultsTab query={searchQuery} searchResultHashes={searchResultHashes} />
-          } />
-          <Route path="/add" element={
-            <h1>Add</h1>
-          } />
-        </Routes >
-      </div>
+      <Routes>
+        <Route path="/" element={
+          <>
+            <nav className="page tabs">
+              <div className="tabs-buttons">
+                <Link to="/results">Results</Link>
+                <Link to="/add">Add</Link>
+              </div>
+            </nav>
+            <hr />
+            <div className="page mainPage">
+              <SearchTab searchState={{ searchQuery, setSearchQuery }} updateSearch={setSearchResultHashes} />
+            </div>
+          </>
+        } />
+        <Route path="/results" element={
+          <>
+            <nav className="page tabs">
+              <SearchForm searchState={{ searchQuery, setSearchQuery }} updateSearch={setSearchResultHashes} setErrorString={undefined} />
+            </nav>
+            <hr />
+            <div className="page mainPage">
+              <ResultsTab query={searchQuery} searchResultHashes={searchResultHashes} />
+            </div>
+          </>
+        } />
+        <Route path="/add" element={
+          <h1>Add</h1>
+        } />
+      </Routes >
     </Router >
   );
 }
