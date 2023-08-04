@@ -28,7 +28,7 @@ function App() {
             <SearchTab searchState={{ searchQuery, setSearchQuery }} updateSearch={setSearchResultHashes} />
           } />
           <Route path="/results" element={
-            <ResultsTab searchResultHashes={searchResultHashes} />
+            <ResultsTab query={searchQuery} searchResultHashes={searchResultHashes} />
           } />
           <Route path="/add" element={
             <h1>Add</h1>

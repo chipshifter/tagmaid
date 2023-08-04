@@ -26,7 +26,7 @@ function Result(props: { resultHash: string }) {
     return resultHtml;
 }
 
-export function ResultsTab(props: { searchResultHashes: string[] }) {
+export function ResultsTab(props: { query: string, searchResultHashes: string[] }) {
     const navigate = useNavigate();
     let results: string[] = props.searchResultHashes;
     console.log("wawa " + results);
@@ -47,7 +47,11 @@ export function ResultsTab(props: { searchResultHashes: string[] }) {
 
     return (
         <div className="resultPage">
-            {results.map((resultHash: string) => (<Result resultHash={resultHash} />))}
+            {
+                results.length > 0 ?
+                    results.map((resultHash: string) => (<Result resultHash={resultHash} />)) :
+                    <span className="noResults">No results found for "{props.query}"</span>
+            }
         </div>
     )
 }
