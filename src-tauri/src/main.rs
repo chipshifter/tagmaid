@@ -1,37 +1,50 @@
 #![allow(dead_code, unused_imports)]
+pub mod client;
 pub mod data;
 pub mod database;
 pub mod feature_flags;
+pub mod tauri_error;
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use crate::feature_flags::FeatureFlags;
-use anyhow::{bail, Context, Result};
 use image::EncodableLayout;
+use once_cell::sync::Lazy;
+use tauri_error::{TauriResult, TauriError};
 #[macro_use]
 extern crate log;
+
+// Search commands
+#[tauri::command]
+fn do_search(query: &str) -> TauriResult<Vec<Vec<u8>>, TauriError> {
+    client::search::do_search(query).map_err(|e| TauriError::Error(e))
+}
 
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// I can already hear the dogs barking
+static TAGMAID_DATABASE: Lazy<TagMaidDatabase> =
+    Lazy::new(|| crate::database::tagmaid_database::init());
+
 /** The main function.
 
 It does the following in order:
- - Initialises logging (`env_logger`).
+ - Initialises the logger (`env_logger`).
  - If specified, imports the files located in `src/samples` with a hardcoded tag
  (this will be changed in the future)
  - If specified, runs a function meant to be used for handling more database things at
  startup
  - Loads [`Config`](crate::data::config)
- - Launches [`app_main`](crate::app_main) which creates and opens the egui UI.
+ - Opens Tauri UI
 */
 fn main() {
     env_logger::init();
     log::info!("Starting up TagMaid. Hello!");
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![greet, do_search])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

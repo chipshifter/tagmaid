@@ -2863,6 +2863,7 @@ dependencies = [
  "hex",
  "image",
  "log",
+ "once_cell",
  "rand 0.8.5",
  "regex",
  "rusqlite",
@@ -2871,6 +2872,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tempfile",
+ "thiserror",
 ]
 
 [[package]]

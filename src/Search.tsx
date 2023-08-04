@@ -1,27 +1,34 @@
-import React from "react";
+import { invoke } from "@tauri-apps/api/tauri";
+import React, { useCallback, useState } from "react";
 
-class SearchForm extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { value: '' };
-        this.handleChange = this.handleChange.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
-    }
+function SearchForm() {
+    const [searchText, setSearchText] = useState("");
+    const [loadingString, setLoadingString] = useState("");
+    const submitSearch = useCallback(async () => {
+        console.log("Hiii");
+        setLoadingString("Searching...");
+        await invoke("do_search", { query: searchText })
+            .then((res) => { 
+                // Search OK
+                console.log(res)
+                setLoadingString("Search success: " + res);
+            })
+            .catch((error) => {
+                setLoadingString("Error: " + error);
+                console.error(error)
+            });
+    }, [searchText, setLoadingString])
 
-    handleChange(event) { this.setState({ value: event.target.value }); }
-    handleSubmit(event) {
-        // Do the search
-        event.preventDefault();
-    }
-
-    render() {
-        return (
-            <form onSubmit={this.handleSubmit}>
-                <input type="text" value={this.state.value} onChange={this.handleChange} />
-                <input type="submit" value="Submit" />
-            </form>
-        );
-    }
+    return (
+        <form onSubmit={(e) => {
+            e.preventDefault()
+            submitSearch();
+        }}>
+            <input type="text" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+            <input type="submit" value="Submit" />
+            <h1>{loadingString}</h1>
+        </form>
+    );
 }
 
 export function SearchTab() {
