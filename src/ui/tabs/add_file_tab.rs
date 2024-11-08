@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-pub fn render(cx: Scope) -> Element {
-    cx.render(rsx! {
+pub fn render() -> Element {
+    rsx! {
         h1 { "Add" }
-    })
+    }
 }

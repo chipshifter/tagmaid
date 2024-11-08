@@ -3,6 +3,8 @@ pub mod data;
 pub mod database;
 pub mod feature_flags;
 pub mod ui;
+use std::sync::{Arc, Mutex};
+
 use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use crate::feature_flags::FeatureFlags;
@@ -29,7 +31,7 @@ fn main() -> Result<()> {
     info!("Starting up TagMaid. Hello!");
 
     if FeatureFlags::DIOXUS_UI {
-        dioxus_desktop::launch(app);
+        dioxus::launch(app);
     }
 
     //let cfg = Config::load();
@@ -39,14 +41,14 @@ fn main() -> Result<()> {
 #[derive(Clone)]
 pub struct UIData {
     pub db: TagMaidDatabase,
-    pub search_results_hashes: Vec<Vec<u8>>,
+    pub search_results_hashes: Arc<Mutex<Vec<Vec<u8>>>>,
 }
 
 impl UIData {
     pub fn new(db: TagMaidDatabase) -> Self {
         Self {
             db: db,
-            search_results_hashes: Vec::new(),
+            search_results_hashes: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -55,37 +57,37 @@ impl UIData {
     }
 
     pub fn update_search_results(&mut self, new_vector: Vec<Vec<u8>>) {
-        self.search_results_hashes = new_vector.clone();
+        *self.search_results_hashes.lock().unwrap() = new_vector.clone();
     }
 
     pub fn get_search_results(&self) -> Vec<Vec<u8>> {
-        self.search_results_hashes.clone()
+        self.search_results_hashes.lock().unwrap().clone()
     }
 }
 
 #[derive(Clone)]
 pub struct UITagmaidDatabase(TagMaidDatabase);
 
-fn get_ui_data(cx: &ScopeState) -> UseSharedState<crate::UIData> {
-    use_shared_state::<crate::UIData>(cx).expect("no").clone()
+fn get_ui_data() -> crate::UIData {
+    use_root_context::<crate::UIData>(|| panic!() )
 }
 
 /// dioxus
-fn app(cx: Scope) -> Element {
+fn app() -> Element {
     // TODO : change the db thing
     let db: TagMaidDatabase = crate::database::tagmaid_database::init();
     #[cfg(feature = "import_samples")]
     import_samples(&db);
 
     // Shared shate of TagMaidDatabase
-    use_shared_state_provider(cx, || UITagmaidDatabase(db.clone()));
+    let db = use_root_context(|| UITagmaidDatabase(db.clone()));
 
     // TODO: Independent shared states for each little thing
-    use_shared_state_provider(cx, || UIData::new(db.clone()));
-    cx.render(rsx! {
-        style { include_str!("ui/css/root.css") }
+    let _ui = use_root_context(|| UIData::new(db.0.clone()));
+    rsx! {
+        style { {include_str!("ui/css/root.css")} }
         crate::ui::render {}
-    })
+    }
 }
 
 #[cfg(feature = "import_samples")]

@@ -1,37 +1,38 @@
 use crate::data::search_command::Search;
 use crate::get_ui_data;
+use crate::ui::Route;
 use crate::TagMaidDatabase;
 use crate::UIData;
 
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use dioxus_router::{Redirect, Router};
+use dioxus_router::prelude::navigator;
 use std::collections::HashSet;
 
 use anyhow::{bail, Context, Result};
 
-pub fn render(cx: Scope) -> Element {
-    let draft = use_ref(cx, String::new);
-    let redirect = use_ref(cx, || false);
-    
-    let do_the_search = || {
-        let ui_data = get_ui_data(cx);
-        let results_vec = do_search(&draft.read(), ui_data.read().db()).ok();
+pub fn render() -> Element {
+    let mut draft = use_signal(String::new);
+    let navigator = navigator();
+
+    let do_the_search = move || {
+        let mut ui_data = get_ui_data();
+        let results_vec = do_search(&draft.read(), ui_data.db()).ok();
         match results_vec {
             Some(results) => {
-                ui_data.write().update_search_results(results);
+                ui_data.update_search_results(results);
             }
             None => {}
         }
         // Redirect to results
-        redirect.set(true);
+        navigator.push(Route::Results {});
     };
 
-    cx.render(rsx! {
+    rsx! {
         h1 { "Search" }
         input {
             autofocus: "true",
             value: "{draft.read()}",
-            oninput: move |event| draft.set(event.value.clone()),
+            oninput: move |event| draft.set(event.value()),
             onkeypress: move |event| {
                 if event.key() == Key::Enter && !draft.read().is_empty() {
                     do_the_search()
@@ -42,11 +43,7 @@ pub fn render(cx: Scope) -> Element {
             onclick: move |_| do_the_search(),
             "Search"
         }
-
-        redirect.read().clone().then(|| {
-            rsx!( Redirect { to: "/results" } )
-        })
-    })
+    }
 }
 
 pub fn do_search(query: &str, db: TagMaidDatabase) -> Result<Vec<Vec<u8>>> {

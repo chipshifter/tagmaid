@@ -28,7 +28,7 @@ impl TagInfoDatabase {
             &[(":tag", tag)],
             |row| {
                 Ok(TagInfo {
-                    /// Right now, just a copy of set_tag_count() made to work with TagInfo
+                    // Right now, just a copy of set_tag_count() made to work with TagInfo
                     tag: tag.to_owned(),
                     upload_count: row.get(0)?,
                 })

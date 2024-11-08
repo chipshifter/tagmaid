@@ -4,10 +4,10 @@ pub mod search_tab;
 pub mod settings_tab;
 
 use dioxus::prelude::*;
-use dioxus_router::Link;
+use dioxus_router::components::Link;
 
-pub fn render(cx: Scope) -> Element {
-    cx.render(rsx! {
+pub fn render() -> Element {
+    rsx! {
         table {
             td {
                 Link { to: "/search", "Search" }
@@ -23,5 +23,5 @@ pub fn render(cx: Scope) -> Element {
             }
         }
         hr {}
-    })
+    }
 }

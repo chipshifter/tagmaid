@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 
-pub fn render(cx: Scope) -> Element {
+pub fn render() -> Element {
     println!("hey");
     
-    cx.render(rsx! {
+    rsx! {
         h1 { "Settings" }
-    })
+    }
 }

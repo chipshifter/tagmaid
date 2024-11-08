@@ -20,10 +20,8 @@ hex = "0.4.3"
 rand = {version = "0.8.5", optional = true}
 env_logger = "0.9.0"
 log = "0.4"
-dioxus = "0.3.2"
-dioxus-desktop = "0.3.0"
-dioxus-router = "0.3.0"
-
+dioxus = {version = "0.5", features = ["desktop"]}
+dioxus-router = "0.5"
 
 [features]
 ui_debug=[]

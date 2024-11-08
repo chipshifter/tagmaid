@@ -3,15 +3,13 @@ use crate::ui::get_tagmaiddatabase;
 use crate::TagFile;
 use crate::UIData;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use dioxus_router::Redirect;
 use std::collections::HashSet;
 
-pub fn render(cx: Scope) -> Element {
-    let ui_data = get_ui_data(cx);
-    let results = ui_data.read().get_search_results();
+pub fn render() -> Element {
+    let ui_data = get_ui_data();
+    let results = ui_data.get_search_results();
     let results_rendered = results.iter().map(|result| {
-        let tf_option = get_tagmaiddatabase(cx)
-            .unwrap()
+        let tf_option = get_tagmaiddatabase()
             .get_tagfile_from_hash(&result)
             .ok();
         rsx!(result_div_component {
@@ -19,21 +17,21 @@ pub fn render(cx: Scope) -> Element {
         })
     });
 
-    cx.render(rsx! {
-        style { include_str!("../css/result_file_component.css") }
+    rsx! {
+        style { {include_str!("../css/result_file_component.css")} }
         div {
             class: "result_page",
-            results_rendered
+            {results_rendered}
         }
-    })
+    }
 }
 
-#[inline_props]
-fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
+#[component]
+fn result_div_component(tagfile: TagFile) -> Element {
     if tagfile.is_empty() {
         return None;
     }
-    cx.render(rsx! {
+    rsx! {
         div {
             class: "result",
             img {
@@ -42,5 +40,5 @@ fn result_div_component(cx: Scope, tagfile: TagFile) -> Element {
             hr {}
             span { "{tagfile.get_file_name()}" }
         }
-    })
+    }
 }
