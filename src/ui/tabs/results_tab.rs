@@ -19,6 +19,7 @@ pub fn render() -> Element {
 
     rsx! {
         style { {include_str!("../css/result_file_component.css")} }
+        h1 { "Results" }
         div {
             class: "result_page",
             {results_rendered}

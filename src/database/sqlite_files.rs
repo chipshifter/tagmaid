@@ -21,6 +21,8 @@ pub struct TagFileSqlite {
     pub file_hash_blob: Vec<u8>,
     pub upload_date: DateTime<Utc>,
     pub tags_blob: Option<Vec<u8>>,
+    pub notes: Option<String>,
+    pub transcript: Option<String>
 }
 
 /// Serialises `HashSet<String>` (used for file tags) into JSON,
@@ -53,7 +55,9 @@ impl FilesDatabase {
                 file_path   TEXT UNIQUE,
                 file_hash   BLOB NOT NULL UNIQUE,
                 upload_date TIMESTAMP NOT NULL,
-                tags        BLOB
+                tags        BLOB,
+                notes       TEXT,
+                transcript  TEXT
             )",
             (),
         )
@@ -82,12 +86,15 @@ impl FilesDatabase {
         let now: DateTime<Utc> = now.into();
         let now = now.to_rfc3339();
 
-        debug!("INSERT INTO _files (file_name, file_hash, file_path, upload_date, tags) VALUES ({}, {}, {}, {}, {:?})",
+        debug!("INSERT INTO _files (file_name, file_hash, file_path, upload_date, tags, notes, transcript) VALUES ({}, {}, {}, {}, {:?}, {:?}, {:?})",
             &file_name,
             crate::data::tag_util::bytes_to_hex(&file_hash),
             &file_path_str,
             &now,
-            &file_tags_serialised);
+            &file_tags_serialised,
+            &file.notes,
+            &file.transcript
+        );
 
         db.execute(
             "INSERT INTO _files (file_name, file_hash, file_path, upload_date, tags) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -161,7 +168,7 @@ impl FilesDatabase {
     /// Internal function for handling file search in the `_files` table.
     fn get_file_from_hash(db: &Connection, hash: &Vec<u8>) -> Result<TagFileSqlite> {
         let mut quer = db.prepare(
-            "SELECT id, file_name, file_path, upload_date, tags FROM _files WHERE file_hash IS :hash",
+            "SELECT id, file_name, file_path, upload_date, tags, notes, transcript FROM _files WHERE file_hash IS :hash",
         )?;
         let mut search_result = quer.query_map(&[(":hash", hash)], |row| {
             Ok(TagFileSqlite {
@@ -171,6 +178,8 @@ impl FilesDatabase {
                 file_hash_blob: hash.clone(),
                 upload_date: row.get(3)?,
                 tags_blob: row.get(4)?,
+                notes: row.get(5)?,
+                transcript: row.get(6)?,
             })
         })?;
         match search_result.nth(0) {
@@ -188,14 +197,18 @@ impl FilesDatabase {
             Some(tagfilesqlite) => {
                 let tags: HashSet<String> = deserialise_tags(&tagfilesqlite.tags_blob.unwrap())?;
                 let path: PathBuf = PathBuf::from(&tagfilesqlite.file_path_string);
-                let file_name: String = (&tagfilesqlite.file_name).to_owned();
-                let file_hash = hash.clone();
+                let file_name: String = tagfilesqlite.file_name;
+                let file_hash = tagfilesqlite.file_hash_blob;
+                let notes = tagfilesqlite.notes;
+                let transcript = tagfilesqlite.transcript;
 
                 let tagfile = TagFile {
-                    path: path,
-                    file_name: file_name,
-                    file_hash: file_hash,
-                    tags: tags,
+                    path,
+                    file_name,
+                    file_hash,
+                    tags,
+                    notes,
+                    transcript
                 };
 
                 debug!(
@@ -238,6 +251,7 @@ impl FilesDatabase {
     /// in the corresponding tag table.
     /// 2) It *updates* (does not add) the `_files` entry which also has an entry
     /// for tags in each individual file.
+    /// 3) adds notes and transcript to the database
     pub fn update_tags_to_file(db: &Connection, file: &TagFile) -> Result<()> {
         // Remove old tags
         // Don't propagate error--because if the tags were already deleted this would Err()
@@ -268,8 +282,8 @@ impl FilesDatabase {
         let file_tags_serialised = serialise_tags(&file.tags)?;
         info!("SqliteDatabase - update_tags_to_file() - Update _files table");
         db.execute(
-            "UPDATE _files SET tags=(?1) WHERE file_hash IS (?2)",
-            [&file_tags_serialised, &file.file_hash],
+            "UPDATE _files SET tags=(?1), notes=(?2), transcript=(?3) WHERE file_hash IS (?4)",
+            (&file_tags_serialised, &file.notes, &file.transcript, &file.file_hash),
         )?;
 
         Ok(())

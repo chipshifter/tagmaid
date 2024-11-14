@@ -9,6 +9,7 @@ use crate::data::{config::Config, tag_file::TagFile};
 use crate::database::{filesystem::FsDatabase, tagmaid_database::TagMaidDatabase};
 use crate::feature_flags::FeatureFlags;
 use anyhow::{bail, Context, Result};
+use dioxus::desktop::{Config as DioxusConfig, WindowBuilder};
 use image::EncodableLayout;
 #[macro_use]
 extern crate log;
@@ -30,8 +31,14 @@ fn main() -> Result<()> {
     env_logger::init();
     info!("Starting up TagMaid. Hello!");
 
+    let cfg = DioxusConfig::new().with_window(
+        WindowBuilder::new().with_title("Tag Maid")
+    );
+
     if FeatureFlags::DIOXUS_UI {
-        dioxus::launch(app);
+        LaunchBuilder::desktop()
+        .with_cfg(cfg)
+        .launch(app);
     }
 
     //let cfg = Config::load();

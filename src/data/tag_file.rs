@@ -21,6 +21,8 @@ pub struct TagFile {
     // (therefore is easy to handle in `SqliteDatabase`)
     pub file_hash: Vec<u8>,
     pub tags: HashSet<String>,
+    pub notes: Option<String>,
+    pub transcript: Option<String>
 }
 
 impl TagFile {
@@ -31,6 +33,8 @@ impl TagFile {
             file_name: String::new(),
             file_hash: Vec::new(),
             tags: HashSet::new(),
+            notes: None,
+            transcript: None
         }
     }
 
@@ -192,12 +196,16 @@ impl TagFile {
     }
 
     pub fn display(&self) -> String {
+        let notes: &str = self.notes.as_ref().map(|s| s.as_ref()).unwrap_or("");
+        let transcript: &str = self.transcript.as_ref().map(|s| s.as_ref()).unwrap_or("");
         return format!(
-            "TagFile{{file_name: {}, path: {}, tags: {:?}, file_hash: {:?}}}",
+            "TagFile{{file_name: {}, path: {}, tags: {:?}, file_hash: {:?}, notes: {}, transcript: {}}}",
             &self.get_file_name(),
             &self.get_path().display(),
             &self.get_tags(),
-            crate::data::tag_util::bytes_to_hex(&self.file_hash)
+            crate::data::tag_util::bytes_to_hex(&self.file_hash),
+            &notes[0..notes.char_indices().map(|ind| ind.0 ).take(20).last().unwrap_or(0)],
+            &transcript[0..transcript.char_indices().map(|ind| ind.0).take(20).last().unwrap_or(0)],
         );
     }
 
